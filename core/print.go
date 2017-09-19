@@ -5,6 +5,8 @@ import "fmt"
 type Print struct {
 }
 
+var Printer Print
+
 // 打印一行信息
 // 字体颜色为绿色
 func (print Print) Logln(a ...interface{}) {
