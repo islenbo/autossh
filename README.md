@@ -42,8 +42,15 @@
 ![登录演示](https://github.com/islenbo/autossh/raw/master/doc/images/ezgif-4-c8145f96ce.gif)
 
 ## 高级用法
+设置alias，可在任意目录下调用
+```bash
+[root@localhost ~]# vim /etc/profile
+在行尾追加 alias autossh="/usr/bin/autossh"
+[root@localhost ~]# . /etc/profile
+```
 
 ## 编译
+go build main.go
 
 ## 依赖包
 - golang.org/x/crypto/ssh
