@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"os"
 	"net"
 	"strconv"
@@ -26,7 +25,7 @@ func (server *Server) Connection() {
 	auths, err := parseAuthMethods(server)
 
 	if err != nil {
-		fmt.Println("解析连接出错:", err)
+		Printer.Errorln("鉴权出错:", err)
 		return
 	}
 
@@ -41,14 +40,14 @@ func (server *Server) Connection() {
 	addr := server.Ip + ":" + strconv.Itoa(server.Port)
 	client, err := ssh.Dial("tcp", addr, config)
 	if err != nil {
-		fmt.Println("建立连接出错:", err)
+		Printer.Errorln("建立连接出错:", err)
 		return
 	}
 	defer client.Close()
 
 	session, err := client.NewSession()
 	if err != nil {
-		fmt.Println("创建Session出错:", err)
+		Printer.Errorln("创建Session出错:", err)
 		return
 	}
 
@@ -57,7 +56,7 @@ func (server *Server) Connection() {
 	fd := int(os.Stdin.Fd())
 	oldState, err := terminal.MakeRaw(fd)
 	if err != nil {
-		fmt.Println("创建文件描述符出错:", err)
+		Printer.Errorln("创建文件描述符出错:", err)
 		return
 	}
 
@@ -67,7 +66,7 @@ func (server *Server) Connection() {
 
 	termWidth, termHeight, err := terminal.GetSize(fd)
 	if err != nil {
-		fmt.Println("获取窗口宽高出错:", err)
+		Printer.Errorln("获取窗口宽高出错:", err)
 		return
 	}
 
@@ -80,19 +79,19 @@ func (server *Server) Connection() {
 	}
 
 	if err := session.RequestPty("xterm-256color", termHeight, termWidth, modes); err != nil {
-		fmt.Println("创建终端出错:", err)
+		Printer.Errorln("创建终端出错:", err)
 		return
 	}
 
 	err = session.Shell()
 	if err != nil {
-		fmt.Println("执行Shell出错:", err)
+		Printer.Errorln("执行Shell出错:", err)
 		return
 	}
 
 	err = session.Wait()
 	if err != nil {
-		fmt.Println("执行Wait出错:", err)
+		Printer.Errorln("执行Wait出错:", err)
 		return
 	}
 }

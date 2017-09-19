@@ -13,7 +13,6 @@ type App struct {
 
 var (
 	servers []Server
-	printer Print
 )
 
 // 启动脚本
@@ -28,30 +27,30 @@ func (app *App) Start() {
 		panic(err)
 	}
 
-	printer.Infoln("========== 欢迎使用 Auto SSH ==========")
+	Printer.Infoln("========== 欢迎使用 Auto SSH ==========")
 	for i, server := range servers {
-		printer.Logln(" ["+strconv.Itoa(i+1)+"]", server.Name)
+		Printer.Logln(" ["+strconv.Itoa(i+1)+"]", server.Name)
 	}
-	printer.Infoln("=======================================")
+	Printer.Infoln("=======================================")
 
 	server := inputSh()
-	printer.Infoln("你选择了: " + server.Name)
+	Printer.Infoln("你选择了: " + server.Name)
 	server.Connection()
 }
 
 // 接收输入，获取对应sh脚本
 func inputSh() Server {
-	printer.Info("请输入序号: ")
+	Printer.Info("请输入序号: ")
 	input := ""
 	fmt.Scanln(&input)
 	num, err := strconv.Atoi(input)
 	if err != nil {
-		printer.Errorln("输入有误，请重新输入")
+		Printer.Errorln("输入有误，请重新输入")
 		return inputSh()
 	}
 
 	if num <= 0 || num > len(servers) {
-		printer.Errorln("输入有误，请重新输入")
+		Printer.Errorln("输入有误，请重新输入")
 		return inputSh()
 	}
 
