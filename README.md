@@ -12,6 +12,8 @@
 
 最后，下定决心用golang写一个ssh client。为什么不用C或者Java？因为golang是世界上最好的编译语言，PHP是世界上最好的脚本语言。
 
+## 下载
+[https://github.com/islenbo/autossh/releases](https://github.com/islenbo/autossh/releases)
 
 ## 配置
 下载编译好的二进制包autossh，在autossh同级目录下新建一个servers.json文件。
