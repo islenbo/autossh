@@ -91,7 +91,7 @@ func (server *Server) Connection() {
 
 	err = session.Wait()
 	if err != nil {
-		Printer.Errorln("执行Wait出错:", err)
+		//Printer.Errorln("执行Wait出错:", err)
 		return
 	}
 }
