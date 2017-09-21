@@ -6,7 +6,8 @@ PROJECT="autossh"
 function build() {
     os=$1
     arch=$2
-    package="${PROJECT}-${os}-${arch}_${VERSION}"
+    alias_name=$3
+    package="${PROJECT}-${alias_name}-${arch}_${VERSION}"
 
     echo "build ${package} ..."
     mkdir -p "./releases/${package}"
@@ -19,10 +20,10 @@ function build() {
     cd ../
 }
 
-# Linux
-build linux amd64
-build linux 386
-build linux arm
-
 # OS X Mac
-build darwin amd64
+build darwin amd64 macOS
+
+# Linux
+build linux amd64 linux
+build linux 386 linux
+build linux arm linux
