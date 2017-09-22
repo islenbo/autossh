@@ -1,4 +1,4 @@
-# Autossh
+# autossh
 
 用golang写的一个ssh远程客户端。可一键登录远程服务器，主要用来弥补Mac Terminal ssh无法保存密码的不足。
 
@@ -56,4 +56,12 @@ go build main.go
 
 ## 依赖包
 - golang.org/x/crypto/ssh
+
+## TODO
+- [ ] -h 显示帮助菜单
+- [ ] 快速配置
+    - [ ] list 显示所有server
+    - [ ] add 添加一个server
+    - [ ] remove name 删除一个server
+    - [ ] edit name 编辑一个server
 
