@@ -47,9 +47,16 @@
 设置alias，可在任意目录下调用
 ```bash
 [root@localhost ~]# vim /etc/profile
-在行尾追加 alias autossh="/usr/bin/autossh"
+在行尾追加 alias autossh="~/autossh_path/autossh"
 [root@localhost ~]# . /etc/profile
 ```
+
+## Q&amp;A
+- Q: Downloads中为什么没有Windows的包？
+- A: Windows下有很多ssh工具，autossh主要是面向Mac/Linux群体。
+
+- Q: 为何要设置alias而不将autossh放到/usr/bin/下？
+- A: autossh核以有两个文件，autossh和servers.json且必须处于同级目录下，所以建议放在其他目录，通过alias调用。
 
 ## 编译
 go build main.go
