@@ -12,6 +12,9 @@ go写的一个ssh远程客户端。可一键登录远程服务器，主要用来
 
 最后，下定决心用golang写一个ssh client。为什么不用C或者Java？因为golang是世界上最好的编译语言，PHP是世界上最好的脚本语言。
 
+## 版本
+v0.2
+
 ## 下载
 [https://github.com/islenbo/autossh/releases](https://github.com/islenbo/autossh/releases)
 
@@ -49,6 +52,21 @@ go写的一个ssh远程客户端。可一键登录远程服务器，主要用来
 [root@localhost ~]# vim /etc/profile
 在行尾追加 alias autossh="~/autossh_path/autossh"
 [root@localhost ~]# . /etc/profile
+```
+更多快捷操作，可调用 `--help` 查看
+```bash
+[root@localhost autossh]# autossh --help
+go写的一个ssh远程客户端。可一键登录远程服务器，主要用来弥补Mac/Linux Terminal ssh无法保存密码的不足。
+基本用法：
+  直接输入autossh不带任何参数，列出所有服务器，输入对应编号登录。
+参数：
+  -v, --version 	 显示 autossh 的版本信息。
+  -h, --help    	 显示帮助信息。
+操作：
+  list          	 显示所有server。
+  add <name>    	 添加一个 server。如：autossh add vagrant。
+  edit <name>   	 编辑一个 server。如：autossh edit vagrant。
+  remove <name> 	 删除一个 server。如：autossh remove vagrant
 ```
 
 ## Q&amp;A
