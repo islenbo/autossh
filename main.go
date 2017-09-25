@@ -14,8 +14,6 @@ func main() {
 		return
 	}
 
-	path = "/Users/linbo/develop/golang/src/autossh/"
-
 	app := core.App{ServersPath: path + "/servers.json"}
 	app.Exec()
 }
