@@ -1,6 +1,6 @@
 # autossh
 
-用golang写的一个ssh远程客户端。可一键登录远程服务器，主要用来弥补Mac Terminal ssh无法保存密码的不足。
+go写的一个ssh远程客户端。可一键登录远程服务器，主要用来弥补Mac/Linux Terminal ssh无法保存密码的不足。
 
 使用Mac开发已有几个月，一直没有找到比较好用的ssh客户端。SecureCRT有Mac版，始终觉得没有自带的Terminal好用。而Terminal只是一个终端，
 对于经常要通过ssh远程操作的人来说，功能还是太弱了。
@@ -65,10 +65,10 @@ go build main.go
 - golang.org/x/crypto/ssh
 
 ## TODO
-- [ ] -h 显示帮助菜单
-- [ ] 快速配置
-    - [ ] list 显示所有server
-    - [ ] add 添加一个server
-    - [ ] remove name 删除一个server
-    - [ ] edit name 编辑一个server
+- [x] -v, --version 查看版本号
+- [x] -h, --help 显示帮助
+- [x] list 显示所有server
+- [x] add 添加一个server
+- [x] remove name 删除一个server
+- [x] edit name 编辑一个server
 
