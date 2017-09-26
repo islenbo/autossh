@@ -10,11 +10,10 @@ import (
 	"errors"
 )
 
-// 版本号
-const VERSION = "0.2"
-
 type App struct {
 	ServersPath string
+	Version     string
+	Build       string
 	servers     []Server
 }
 
@@ -230,7 +229,7 @@ func (app *App) list() {
 
 // 版本信息
 func (app *App) version() {
-	fmt.Println("Autossh", VERSION, "。")
+	fmt.Println("autossh " + app.Version + " Build " + app.Build + "。")
 	fmt.Println("由 Lenbo 编写，项目地址：https://github.com/islenbo/autossh。")
 }
 

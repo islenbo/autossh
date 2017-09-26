@@ -7,6 +7,11 @@ import (
 	"fmt"
 )
 
+var (
+	Version = "unknown"
+	Build = "unknown"
+)
+
 func main() {
 	path, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
@@ -14,6 +19,10 @@ func main() {
 		return
 	}
 
-	app := core.App{ServersPath: path + "/servers.json"}
+	app := core.App{
+		ServersPath: path + "/servers.json",
+		Version:     Version,
+		Build: Build,
+	}
 	app.Exec()
 }
