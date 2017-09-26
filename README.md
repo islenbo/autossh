@@ -12,9 +12,6 @@ go写的一个ssh远程客户端。可一键登录远程服务器，主要用来
 
 最后，下定决心用golang写一个ssh client。为什么不用C或者Java？因为golang是世界上最好的编译语言，PHP是世界上最好的脚本语言。
 
-## 版本
-v0.2
-
 ## 下载
 [https://github.com/islenbo/autossh/releases](https://github.com/islenbo/autossh/releases)
 
