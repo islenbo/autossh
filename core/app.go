@@ -79,7 +79,7 @@ func (app *App) edit(name string) {
 		return
 	}
 
-	server := &app.servers[index]
+	server := app.servers[index]
 	var def string
 
 	def = server.Ip
@@ -133,6 +133,7 @@ func (app *App) edit(name string) {
 		fmt.Scanln(&server.Password)
 	}
 
+	app.servers[index] = server
 	err := app.saveServers()
 	if err != nil {
 		Printer.Errorln("保存到servers.json失败：", err)
