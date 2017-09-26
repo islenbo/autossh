@@ -44,7 +44,7 @@ v0.2
 ]
 ```
 保存servers.json，执行autossh，即可看到相应服务器信息，输入对应序号，即可自动登录到服务器
-![登录演示](https://github.com/islenbo/autossh/raw/master/doc/images/ezgif-4-c8145f96ce.gif)
+![登录演示](https://github.com/islenbo/autossh/raw/master/doc/images/demo.gif)
 
 ## 高级用法
 设置alias，可在任意目录下调用
