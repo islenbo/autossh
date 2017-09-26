@@ -71,10 +71,10 @@ go写的一个ssh远程客户端。可一键登录远程服务器，主要用来
 
 ## Q&amp;A
 - Q: Downloads中为什么没有Windows的包？
-- A: Windows下有很多ssh工具，autossh主要是面向Mac/Linux群体。
+- A: Windows下有很多优秀的ssh工具，autossh主要面向Mac/Linux群体。
 
-- Q: 为何要设置alias而不将autossh放到/usr/bin/下？
-- A: autossh核以有两个文件，autossh和servers.json且必须处于同级目录下，所以建议放在其他目录，通过alias调用。
+- Q: 为什么要设置alias而不将autossh放到/usr/bin/下？
+- A: autossh核心文件有两个，autossh和servers.json且必须处于同级目录下，所以建议放在其他目录，通过alias调用。
 
 ## 编译
 go build main.go
