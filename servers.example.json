@@ -1,19 +1,39 @@
 [
-  {
-    "name": "vagrant",
-    "ip": "192.168.33.10",
-    "port": 22,
-    "user": "root",
-    "password": "vagrant",
-    "method": "password"
-  },
-  {
-    "name": "ssh-pem",
-    "ip": "192.168.33.11",
-    "port": 22,
-    "user": "root",
-    "password": "your pem file password or empty",
-    "method": "pem",
-    "key": "your pem file path"
-  }
+	{
+		"group": "group one",
+		"Servers": [
+			{
+				"name": "vagrant",
+				"ip": "192.168.33.10",
+				"port": 22,
+				"user": "root",
+				"password": "vagrant",
+				"method": "password",
+				"key": ""
+			},
+			{
+				"name": "ssh-pem",
+				"ip": "192.168.33.11",
+				"port": 22,
+				"user": "root",
+				"password": "your pem file password or empty",
+				"method": "pem",
+				"key": "your pem file path"
+			}
+		]
+	},
+	{
+		"group": "group two",
+		"Servers": [
+			{
+				"name": "shop",
+				"ip": "10.80.121.36",
+				"port": 22,
+				"user": "root",
+				"password": "",
+				"method": "pem",
+				"key": "your pem file path"
+			}
+		]
+	}
 ]

@@ -12,10 +12,14 @@ import (
 
 // 版本号
 const VERSION = "0.2"
+type Group struct {
+	Name string `json:"group"`
+	Servers []Server
+}
 
 type App struct {
 	ServersPath string
-	servers     []Server
+	Groups     []Group
 }
 
 // 执行脚本
@@ -25,7 +29,7 @@ func (app *App) Exec() {
 		panic(err)
 	}
 
-	err = json.Unmarshal(b, &app.servers)
+	err = json.Unmarshal(b, &app.Groups)
 	if err != nil {
 		panic(errors.New("解析servers.json失败：" + err.Error()))
 	}
@@ -36,11 +40,11 @@ func (app *App) Exec() {
 		case "list":
 			app.list()
 		case "add":
-			app.add(app.getArg(2, ""))
+			app.add(app.getArg(2, 3, ""))
 		case "edit":
-			app.edit(app.getArg(2, ""))
+			app.edit(app.getArg(2, 3, ""))
 		case "remove":
-			app.remove(app.getArg(2, ""))
+			app.remove(app.getArg(2, 3, ""))
 
 		case "--version":
 			fallthrough
@@ -62,25 +66,30 @@ func (app *App) Exec() {
 // 启动脚本
 func (app *App) start() {
 	Printer.Infoln("========== 欢迎使用 Auto SSH ==========")
-	for i, server := range app.servers {
-		Printer.Logln(" ["+strconv.Itoa(i+1)+"]", server.Name)
+	for i, group := range app.Groups {
+		Printer.Logln(" ["+strconv.Itoa(i+1)+"]", group.Name)
 	}
 	Printer.Infoln("=======================================")
 
-	server := app.inputSh()
-	Printer.Infoln("你选择了: " + server.Name)
+	group := app.inputGroupSh()
+	Printer.Infoln("你选择了: " + group.Name)
+
+	for i, server := range group.Servers {
+		Printer.Logln(" ["+strconv.Itoa(i+1)+"]", server.Name)
+	}
+	server := app.inputServerSh(group)
 	server.Connection()
 }
 
 // 编辑
-func (app *App) edit(name string) {
-	exists, index := app.serverExists(name)
+func (app *App) edit(groupName, serverName string) {
+	exists, groupIndex, serverIndex := app.serverExists(groupName, serverName)
 	if !exists {
-		Printer.Errorln("Server", name, "不存在")
+		Printer.Errorln("Server", serverName, "不存在")
 		return
 	}
 
-	server := &app.servers[index]
+	server := &app.Groups[groupIndex].Servers[serverIndex]
 	var def string
 
 	def = server.Ip
@@ -143,11 +152,11 @@ func (app *App) edit(name string) {
 }
 
 // 删除
-func (app *App) remove(name string) {
-	exists, index := app.serverExists(name)
+func (app *App) remove(groupName, serverName string) {
+	exists, groupIndex, serverIndex := app.serverExists(groupName, serverName)
 
 	if exists {
-		app.servers = append(app.servers[:index], app.servers[index+1:]...)
+		app.Groups[groupIndex].Servers = append(app.Groups[groupIndex].Servers[:serverIndex], app.Groups[groupIndex].Servers[serverIndex+1:]...)
 		err := app.saveServers()
 		if err != nil {
 			Printer.Errorln("保存到servers.json失败：", err)
@@ -155,23 +164,28 @@ func (app *App) remove(name string) {
 			Printer.Infoln("删除成功")
 		}
 	} else {
-		Printer.Errorln("Server", name, "不存在")
+		Printer.Errorln("Server", serverName, "不存在")
 	}
 }
 
 // 添加
-func (app *App) add(name string) {
-	if name == "" {
+func (app *App) add(groupName, serverName string) {
+	if groupName == "" {
+		Printer.Errorln("group name 不能为空")
+		return
+	}
+
+	if serverName == "" {
 		Printer.Errorln("server name 不能为空")
 		return
 	}
 
-	if exists, _ := app.serverExists(name); exists {
-		Printer.Errorln("server", name, "已存在")
+	if exists, _, _ := app.serverExists(groupName, serverName); exists {
+		Printer.Errorln("server", serverName, "已存在")
 		return
 	}
-
-	server := Server{Name: name}
+	group := Group{Name: groupName}
+	server := Server{Name: serverName}
 
 	Printer.Info("请输入IP：")
 	fmt.Scanln(&server.Ip)
@@ -195,8 +209,8 @@ func (app *App) add(name string) {
 		Printer.Info("请输入Password（若无请留空）：")
 		fmt.Scanln(&server.Password)
 	}
-
-	app.servers = append(app.servers, server)
+	group.Servers = append(group.Servers, server)
+	app.Groups = append(app.Groups, group)
 	err := app.saveServers()
 	if err != nil {
 		Printer.Errorln("保存到servers.json失败：", err)
@@ -207,7 +221,7 @@ func (app *App) add(name string) {
 
 // 保存servers到servers.json文件
 func (app *App) saveServers() error {
-	b, err := json.Marshal(app.servers)
+	b, err := json.Marshal(app.Groups)
 	if err != nil {
 		return err
 	}
@@ -223,8 +237,11 @@ func (app *App) saveServers() error {
 
 // 打印列表
 func (app *App) list() {
-	for _, server := range app.servers {
-		Printer.Logln(server.Name)
+	for _, group := range app.Groups {
+		Printer.Logln(group.Name, ":")
+		for _, server := range group.Servers {
+			Printer.Logln("   ", server.Name)
+		}
 	}
 }
 
@@ -250,41 +267,59 @@ func (app *App) help() {
 }
 
 // 判断server是否存在
-func (app *App) serverExists(name string) (bool, int) {
-	for index, server := range app.servers {
-		if server.Name == name {
-			return true, index
+func (app *App) serverExists(groupName, serverName string) (bool, int, int) {
+	for index, group := range app.Groups {
+		for i, server := range group.Servers {
+			if server.Name == serverName && group.Name == groupName {
+				return true, index, i
+			}
 		}
 	}
 
-	return false, -1
+	return false, -1, -1
 }
 
 // 接收输入，获取对应sh脚本
-func (app *App) inputSh() Server {
+func (app *App) inputGroupSh() Group {
+	num, err := app.inputInfo(len(app.Groups))
+	if err != nil {
+		return app.inputGroupSh()
+	}
+	return app.Groups[num-1]
+}
+
+func (app *App) inputServerSh(group Group) Server {
+	servers := group.Servers
+	num, err := app.inputInfo(len(servers))
+	if err != nil {
+		return app.inputServerSh(group)
+	}
+	return servers[num-1]
+}
+
+func (app *App) inputInfo(max int) (int, error) {
 	Printer.Info("请输入序号: ")
 	input := ""
 	fmt.Scanln(&input)
 	num, err := strconv.Atoi(input)
 	if err != nil {
 		Printer.Errorln("输入有误，请重新输入")
-		return app.inputSh()
+		return 0, err
 	}
 
-	if num <= 0 || num > len(app.servers) {
-		Printer.Errorln("输入有误，请重新输入")
-		return app.inputSh()
+	if num <= 0 || num > max {
+		// Printer.Errorln("输入有误，请重新输入")
+		return 0, errors.New("输入有误，请重新输入")
 	}
-
-	return app.servers[num-1]
+	return num, nil
 }
 
 // 获取参数
-func (app *App) getArg(index int, def string) string {
+func (app *App) getArg(groupIndex, serverIndex int, def string) (string, string) {
 	max := len(os.Args) - 1
-	if max >= index {
-		return os.Args[index]
+	if max >= groupIndex || max >= serverIndex {
+		return os.Args[groupIndex], os.Args[serverIndex]
 	}
 
-	return def
+	return def, def
 }
