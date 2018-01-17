@@ -245,9 +245,9 @@ func (app *App) saveServers() error {
 // 打印列表
 func (app *App) list() {
 	for _, group := range app.Groups {
-		Printer.Logln(group.Name, ":")
+		Printer.Infoln(group.Name + ":")
 		for _, server := range group.Servers {
-			Printer.Logln("   ", server.Name)
+			Printer.Logln("  ", server.Name)
 		}
 	}
 }
@@ -268,9 +268,9 @@ func (app *App) help() {
 	fmt.Println("  -h, --help   ", "\t", "显示帮助信息。")
 	fmt.Println("操作：")
 	fmt.Println("  list         ", "\t", "显示所有server。")
-	fmt.Println("  add <name>   ", "\t", "添加一个 server。如：autossh add vagrant。")
-	fmt.Println("  edit <name>  ", "\t", "编辑一个 server。如：autossh edit vagrant。")
-	fmt.Println("  remove <name>", "\t", "删除一个 server。如：autossh remove vagrant。")
+	fmt.Println("  add <group> <server>   ", "\t", "添加一个 server。如：autossh add group1 vagrant。")
+	fmt.Println("  edit <group> <server>  ", "\t", "编辑一个 server。如：autossh edit group1 vagrant。")
+	fmt.Println("  remove <group> <server>", "\t", "删除一个 server。如：autossh remove group1 vagrant。")
 }
 
 // 判断server是否存在
