@@ -74,10 +74,17 @@ func (app *App) start() {
 	group := app.inputGroupSh()
 	Printer.Infoln("你选择了: " + group.Name)
 
+	Printer.Infoln("========== 请选择服务器 ==========")
 	for i, server := range group.Servers {
 		Printer.Logln(" ["+strconv.Itoa(i+1)+"]", server.Name)
 	}
+	Printer.Logln(" ["+"-1"+"]", "返回")
+	Printer.Infoln("=======================================")
 	server := app.inputServerSh(group)
+	if server.Name == "" {
+		app.start()
+		return
+	}
 	server.Connection()
 }
 
@@ -282,7 +289,7 @@ func (app *App) serverExists(groupName, serverName string) (bool, int, int) {
 // 接收输入，获取对应sh脚本
 func (app *App) inputGroupSh() Group {
 	num, err := app.inputInfo(len(app.Groups))
-	if err != nil {
+	if err != nil || num == -1 {
 		return app.inputGroupSh()
 	}
 	return app.Groups[num-1]
@@ -293,6 +300,9 @@ func (app *App) inputServerSh(group Group) Server {
 	num, err := app.inputInfo(len(servers))
 	if err != nil {
 		return app.inputServerSh(group)
+	}
+	if num == -1 {
+		return Server{}
 	}
 	return servers[num-1]
 }
@@ -306,9 +316,12 @@ func (app *App) inputInfo(max int) (int, error) {
 		Printer.Errorln("输入有误，请重新输入")
 		return 0, err
 	}
+	if num == -1 {
+		return -1, nil
+	}
 
 	if num <= 0 || num > max {
-		// Printer.Errorln("输入有误，请重新输入")
+		Printer.Errorln("输入有误，请重新输入")
 		return 0, errors.New("输入有误，请重新输入")
 	}
 	return num, nil
