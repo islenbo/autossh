@@ -1,25 +1,32 @@
 package core
 
 import (
-	"fmt"
-	"strconv"
-	"io/ioutil"
-	"encoding/json"
-	"os"
 	"bytes"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"strconv"
 )
 
 // 版本号
 const VERSION = "0.2"
+
 type Group struct {
-	Name string `json:"group"`
+	Name    string `json:"group"`
 	Servers []Server
+}
+type Config struct {
+	Groups   []Group `json:"groups"`
+	Method   string  `json:"method"`
+	Password string  `json:"password"`
+	Key      string  `json:"key"`
 }
 
 type App struct {
 	ServersPath string
-	Groups     []Group
+	Config      Config
 }
 
 // 执行脚本
@@ -29,7 +36,7 @@ func (app *App) Exec() {
 		panic(err)
 	}
 
-	err = json.Unmarshal(b, &app.Groups)
+	err = json.Unmarshal(b, &app.Config)
 	if err != nil {
 		panic(errors.New("解析servers.json失败：" + err.Error()))
 	}
@@ -43,6 +50,8 @@ func (app *App) Exec() {
 			app.add(app.getArg(2, 3, ""))
 		case "edit":
 			app.edit(app.getArg(2, 3, ""))
+		case "set-global":
+			app.editGlobal(app.getArg(2, 3, ""))
 		case "remove":
 			app.remove(app.getArg(2, 3, ""))
 
@@ -66,7 +75,7 @@ func (app *App) Exec() {
 // 启动脚本
 func (app *App) start() {
 	Printer.Infoln("========== 欢迎使用 Auto SSH ==========")
-	for i, group := range app.Groups {
+	for i, group := range app.Config.Groups {
 		Printer.Logln(" ["+strconv.Itoa(i+1)+"]", group.Name)
 	}
 	Printer.Infoln("=======================================")
@@ -74,7 +83,7 @@ func (app *App) start() {
 	group := app.inputGroupSh()
 	Printer.Infoln("你选择了: " + group.Name)
 
-	Printer.Infoln("========== 请选择服务器 ==========")
+	Printer.Infoln("============ 请选择服务器 ============")
 	for i, server := range group.Servers {
 		Printer.Logln(" ["+strconv.Itoa(i+1)+"]", server.Name)
 	}
@@ -85,7 +94,7 @@ func (app *App) start() {
 		app.start()
 		return
 	}
-	server.Connection()
+	server.Connection(&app.Config)
 }
 
 // 编辑
@@ -96,7 +105,7 @@ func (app *App) edit(groupName, serverName string) {
 		return
 	}
 
-	server := &app.Groups[groupIndex].Servers[serverIndex]
+	server := &app.Config.Groups[groupIndex].Servers[serverIndex]
 	var def string
 
 	def = server.Ip
@@ -158,12 +167,38 @@ func (app *App) edit(groupName, serverName string) {
 	}
 }
 
+func (app *App) editGlobal(name, value string) {
+	if name != "method" && name != "key" && name != "password" {
+		Printer.Errorln("请输入正确的设置项: method, key, password")
+		return
+	}
+	config := app.Config
+	switch name {
+	case "method":
+		config.Method = value
+
+	case "key":
+		config.Key = value
+
+	case "password":
+		config.Password = value
+	}
+
+	err := app.saveServers()
+	if err != nil {
+		Printer.Errorln("保存到servers.json失败：", err)
+	} else {
+		Printer.Infoln("保存成功")
+	}
+}
+
 // 删除
 func (app *App) remove(groupName, serverName string) {
 	exists, groupIndex, serverIndex := app.serverExists(groupName, serverName)
 
 	if exists {
-		app.Groups[groupIndex].Servers = append(app.Groups[groupIndex].Servers[:serverIndex], app.Groups[groupIndex].Servers[serverIndex+1:]...)
+		config := app.Config
+		config.Groups[groupIndex].Servers = append(config.Groups[groupIndex].Servers[:serverIndex], config.Groups[groupIndex].Servers[serverIndex+1:]...)
 		err := app.saveServers()
 		if err != nil {
 			Printer.Errorln("保存到servers.json失败：", err)
@@ -217,7 +252,7 @@ func (app *App) add(groupName, serverName string) {
 		fmt.Scanln(&server.Password)
 	}
 	group.Servers = append(group.Servers, server)
-	app.Groups = append(app.Groups, group)
+	app.Config.Groups = append(app.Config.Groups, group)
 	err := app.saveServers()
 	if err != nil {
 		Printer.Errorln("保存到servers.json失败：", err)
@@ -228,7 +263,7 @@ func (app *App) add(groupName, serverName string) {
 
 // 保存servers到servers.json文件
 func (app *App) saveServers() error {
-	b, err := json.Marshal(app.Groups)
+	b, err := json.Marshal(app.Config)
 	if err != nil {
 		return err
 	}
@@ -244,7 +279,7 @@ func (app *App) saveServers() error {
 
 // 打印列表
 func (app *App) list() {
-	for _, group := range app.Groups {
+	for _, group := range app.Config.Groups {
 		Printer.Infoln(group.Name + ":")
 		for _, server := range group.Servers {
 			Printer.Logln("  ", server.Name)
@@ -275,7 +310,7 @@ func (app *App) help() {
 
 // 判断server是否存在
 func (app *App) serverExists(groupName, serverName string) (bool, int, int) {
-	for index, group := range app.Groups {
+	for index, group := range app.Config.Groups {
 		for i, server := range group.Servers {
 			if server.Name == serverName && group.Name == groupName {
 				return true, index, i
@@ -288,11 +323,11 @@ func (app *App) serverExists(groupName, serverName string) (bool, int, int) {
 
 // 接收输入，获取对应sh脚本
 func (app *App) inputGroupSh() Group {
-	num, err := app.inputInfo(len(app.Groups))
+	num, err := app.inputInfo(len(app.Config.Groups))
 	if err != nil || num == -1 {
 		return app.inputGroupSh()
 	}
-	return app.Groups[num-1]
+	return app.Config.Groups[num-1]
 }
 
 func (app *App) inputServerSh(group Group) Server {
