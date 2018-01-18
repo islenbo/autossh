@@ -306,6 +306,7 @@ func (app *App) help() {
 	fmt.Println("  add <group> <server>   ", "\t", "添加一个 server。如：autossh add group1 vagrant。")
 	fmt.Println("  edit <group> <server>  ", "\t", "编辑一个 server。如：autossh edit group1 vagrant。")
 	fmt.Println("  remove <group> <server>", "\t", "删除一个 server。如：autossh remove group1 vagrant。")
+	fmt.Println("  set-global <name> <value>", "\t", "配置全局默认设置，name可选：key,password,method。如：autossh set-global method password")
 }
 
 // 判断server是否存在
