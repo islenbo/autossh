@@ -1,7 +1,7 @@
 package main
 
 import (
-	"autossh/core"
+	"github.com/islenbo/autossh/core"
 	"path/filepath"
 	"os"
 	"fmt"
