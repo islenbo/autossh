@@ -1,13 +1,14 @@
 package core
 
 import (
-	"os"
-	"net"
-	"strconv"
-	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/terminal"
 	"errors"
 	"io/ioutil"
+	"net"
+	"os"
+	"strconv"
+
+	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 type Server struct {
@@ -21,8 +22,8 @@ type Server struct {
 }
 
 // 执行远程连接
-func (server *Server) Connection() {
-	auths, err := parseAuthMethods(server)
+func (server *Server) Connection(appConfig *Config) {
+	auths, err := parseAuthMethods(server, appConfig)
 
 	if err != nil {
 		Printer.Errorln("鉴权出错:", err)
@@ -97,7 +98,7 @@ func (server *Server) Connection() {
 }
 
 // 解析鉴权方式
-func parseAuthMethods(server *Server) ([]ssh.AuthMethod, error) {
+func parseAuthMethods(server *Server, config *Config) ([]ssh.AuthMethod, error) {
 	sshs := []ssh.AuthMethod{}
 
 	switch server.Method {
@@ -106,7 +107,7 @@ func parseAuthMethods(server *Server) ([]ssh.AuthMethod, error) {
 		break
 
 	case "pem":
-		method, err := pemKey(server)
+		method, err := pemKey(server.Key, server.Password)
 		if err != nil {
 			return nil, err
 		}
@@ -114,24 +115,39 @@ func parseAuthMethods(server *Server) ([]ssh.AuthMethod, error) {
 		break
 
 	default:
-		return nil, errors.New("无效的密码方式: " + server.Method)
+		switch config.Method {
+		case "password":
+			sshs = append(sshs, ssh.Password(config.Password))
+			break
+
+		case "pem":
+			method, err := pemKey(config.Key, config.Password)
+			if err != nil {
+				return nil, err
+			}
+			sshs = append(sshs, method)
+			break
+
+		default:
+			return nil, errors.New("无效的密码方式: " + server.Method)
+		}
 	}
 
 	return sshs, nil
 }
 
 // 解析pem密钥
-func pemKey(server *Server) (ssh.AuthMethod, error) {
-	pemBytes, err := ioutil.ReadFile(server.Key)
+func pemKey(key, password string) (ssh.AuthMethod, error) {
+	pemBytes, err := ioutil.ReadFile(key)
 	if err != nil {
 		return nil, err
 	}
 
 	var signer ssh.Signer
-	if server.Password == "" {
+	if password == "" {
 		signer, err = ssh.ParsePrivateKey(pemBytes)
 	} else {
-		signer, err = ssh.ParsePrivateKeyWithPassphrase(pemBytes, []byte(server.Password))
+		signer, err = ssh.ParsePrivateKeyWithPassphrase(pemBytes, []byte(password))
 	}
 
 	if err != nil {
