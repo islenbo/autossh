@@ -2,27 +2,40 @@ package main
 
 import (
 	"autossh/core"
-	"path/filepath"
 	"os"
-	"fmt"
+	"path/filepath"
+	"flag"
 )
 
 var (
 	Version = "unknown"
-	Build = "unknown"
+	Build   = "unknown"
 )
 
 func main() {
-	path, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	configPath := flag.String("c", "./config.json", "指定配置文件路径")
+	flag.Parse()
+
+	if *configPath == "" {
+		*configPath, _ = filepath.Abs(filepath.Dir(os.Args[0]))
+		*configPath = *configPath + "/config.json"
+	}
+
+	_, err := os.Stat(*configPath)
 	if err != nil {
-		fmt.Println("error:", err)
+		if os.IsNotExist(err) {
+			core.Printer.Errorln("config file", *configPath+" not exists")
+		} else {
+			core.Printer.Errorln("unknown error", err)
+		}
+
 		return
 	}
 
 	app := core.App{
-		ServersPath: path + "/servers.json",
-		Version:     Version,
-		Build: Build,
+		ConfigPath: *configPath,
+		Version:    Version,
+		Build:      Build,
 	}
 	app.Exec()
 }

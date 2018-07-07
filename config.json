@@ -1,0 +1,78 @@
+{
+  "log_path": "./app.log",
+  "show_detail": true,
+  "options": {
+    "ServerAliveInterval": 10
+  },
+  "servers": [
+    {
+      "name": "vagrant",
+      "ip": "192.168.33.10",
+      "port": 22,
+      "user": "root",
+      "password": "123456",
+      "method": "password",
+      "key": "",
+      "options": {
+        "ServerAliveInterval": 30
+      }
+    },
+    {
+      "name": "vagrant-sshkey",
+      "ip": "192.168.33.10",
+      "user": "root",
+      "method": "key",
+      "key": "your key path, default: ~/.ssh/id_rsa"
+    }
+  ],
+  "groups": [
+    {
+      "group_name": "group1",
+      "prefix": "a",
+      "servers": [
+        {
+          "name": "test1",
+          "ip": "192.168.33.10",
+          "user": "root",
+          "method": "key"
+        },
+        {
+          "name": "test2",
+          "ip": "192.168.33.10",
+          "user": "root",
+          "method": "key"
+        },
+        {
+          "name": "test3",
+          "ip": "192.168.33.10",
+          "user": "root",
+          "method": "key"
+        }
+      ]
+    },
+    {
+      "group_name": "group2",
+      "prefix": "b",
+      "servers": [
+        {
+          "name": "group2-01",
+          "ip": "192.168.33.10",
+          "user": "root",
+          "method": "key"
+        },
+        {
+          "name": "group2-02",
+          "ip": "192.168.33.10",
+          "user": "root",
+          "method": "key"
+        },
+        {
+          "name": "group2-03",
+          "ip": "192.168.33.10",
+          "user": "root",
+          "method": "key"
+        }
+      ]
+    }
+  ]
+}
