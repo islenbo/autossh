@@ -193,7 +193,8 @@ func (app *App) loadConfig() {
 
 // 打印列表
 func (app *App) showServers() {
-	Printer.Infoln("========== 欢迎使用 Auto SSH ==========")
+	maxlen := app.separatorLength()
+	app.formatSeparator(" 欢迎使用 Auto SSH ", "=", maxlen)
 	for i, server := range app.config.Servers {
 		Printer.Logln(app.recordServer(strconv.Itoa(i+1), server))
 	}
@@ -203,18 +204,39 @@ func (app *App) showServers() {
 			continue
 		}
 
-		Printer.Infoln("____________________ " + group.GroupName + " ____________________")
+		app.formatSeparator(" "+group.GroupName+" ", "_", maxlen)
 		for i, server := range group.Servers {
 			Printer.Logln(app.recordServer(group.Prefix+strconv.Itoa(i+1), server))
 		}
 	}
 
-	Printer.Logln("")
-	Printer.Infoln("=======================================")
-	Printer.Logln(" [edit]", " ", "编辑")
-	Printer.Logln(" [exit]", " ", "退出")
-	Printer.Infoln("=======================================")
+	app.formatSeparator("", "=", maxlen)
+	Printer.Logln("", "[edit] 编辑", "\t", "[add] 添加", "\t", "[exit] 退出")
+	app.formatSeparator("", "=", maxlen)
 	Printer.Info("请输入序号或操作: ")
+}
+
+func (app *App) formatSeparator(title string, c string, maxlength float64) {
+
+	charslen := int((maxlength - ZhLen(title)) / 2)
+	chars := ""
+	for i := 0; i < charslen; i ++ {
+		chars += c
+	}
+
+	Printer.Infoln(chars + title + chars)
+}
+
+func (app *App) separatorLength() float64 {
+	maxlength := 50.0
+	for _, group := range app.config.Groups {
+		length := ZhLen(group.GroupName)
+		if length > maxlength {
+			maxlength = length + 10
+		}
+	}
+
+	return maxlength
 }
 
 // 加载

@@ -82,7 +82,7 @@ func version() {
 func help() {
 	fmt.Println("go写的一个ssh远程客户端。可一键登录远程服务器，主要用来弥补Mac/Linux Terminal ssh无法保存密码的不足。")
 	fmt.Println("参数：")
-	fmt.Println("  -c, --config ", "\t", "指定配置文件")
-	fmt.Println("  -h, --help   ", "\t", "显示帮助信息。")
-	fmt.Println("  -v, --version", "\t", "显示 autossh 的版本信息。")
+	fmt.Println("  -c, --config ", "default=./config.json \t", "指定配置文件。")
+	fmt.Println("  -h, --help   ", "                      \t", "显示帮助信息。")
+	fmt.Println("  -v, --version", "                      \t", "显示 autossh 的版本信息。")
 }
