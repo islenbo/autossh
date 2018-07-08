@@ -8,18 +8,24 @@ import (
 	"strings"
 	"os/user"
 	"errors"
+	"path/filepath"
 )
 
 // 解析路径
 func ParsePath(path string) (string, error) {
 	str := []rune(path)
-	if string(str[:1]) == "~" {
+	firstKey := string(str[:1])
+
+	if firstKey == "~" {
 		home, err := home()
 		if err != nil {
 			return "", err
 		}
 
 		return home + string(str[1:]), nil
+	} else if firstKey == "." {
+		p, _ := filepath.Abs(filepath.Dir(os.Args[0]))
+		return p + "/" + path, nil
 	} else {
 		return path, nil
 	}

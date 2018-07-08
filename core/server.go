@@ -8,6 +8,7 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 	"io/ioutil"
 	"time"
+	"fmt"
 )
 
 type Server struct {
@@ -19,6 +20,9 @@ type Server struct {
 	Method   string                 `json:"method"`
 	Key      string                 `json:"key"`
 	Options  map[string]interface{} `json:"options"`
+
+	termWidth  int
+	termHeight int
 }
 
 // 执行远程连接
@@ -27,6 +31,7 @@ func (server *Server) Connect() {
 
 	if err != nil {
 		Printer.Errorln("鉴权出错:", err)
+		Log.Category("server").Error("auth fail", err)
 		return
 	}
 
@@ -47,6 +52,7 @@ func (server *Server) Connect() {
 	client, err := ssh.Dial("tcp", addr, config)
 	if err != nil {
 		Printer.Errorln("ssh dial fail:", err)
+		Log.Category("server").Error("ssh dial fail", err)
 		return
 	}
 	defer client.Close()
@@ -54,6 +60,7 @@ func (server *Server) Connect() {
 	session, err := client.NewSession()
 	if err != nil {
 		Printer.Errorln("create session fail:", err)
+		Log.Category("server").Error("create session fail", err)
 		return
 	}
 
@@ -63,6 +70,7 @@ func (server *Server) Connect() {
 	oldState, err := terminal.MakeRaw(fd)
 	if err != nil {
 		Printer.Errorln("创建文件描述符出错:", err)
+		Log.Category("server").Error("创建文件描述符出错", err)
 		return
 	}
 
@@ -81,9 +89,10 @@ func (server *Server) Connect() {
 		ssh.TTY_OP_OSPEED: 14400,
 	}
 
-	termWidth, termHeight, _ := terminal.GetSize(fd)
-	if err := session.RequestPty("xterm-256color", termHeight, termWidth, modes); err != nil {
+	server.termWidth, server.termHeight, _ = terminal.GetSize(fd)
+	if err := session.RequestPty("xterm-256color", server.termHeight, server.termWidth, modes); err != nil {
 		Printer.Errorln("创建终端出错:", err)
+		Log.Category("server").Error("创建终端出错", err)
 		return
 	}
 
@@ -93,12 +102,14 @@ func (server *Server) Connect() {
 	err = session.Shell()
 	if err != nil {
 		Printer.Errorln("执行Shell出错:", err)
+		Log.Category("server").Error("执行Shell出错", err)
 		return
 	}
 
 	err = session.Wait()
 	if err != nil {
 		//Printer.Errorln("执行Wait出错:", err)
+		Log.Category("server").Error("执行Wait出错", err)
 		return
 	}
 }
@@ -113,7 +124,13 @@ func (server *Server) listenWindowChange(session *ssh.Session, fd int) chan stru
 				return
 			default:
 				termWidth, termHeight, _ := terminal.GetSize(fd)
-				session.WindowChange(termHeight, termWidth)
+
+				if server.termWidth != termWidth || server.termHeight != termHeight {
+					server.termHeight = termHeight
+					server.termWidth = termWidth
+					session.WindowChange(termHeight, termWidth)
+				}
+
 				time.Sleep(time.Millisecond * 3)
 			}
 		}
@@ -134,7 +151,7 @@ func (server *Server) startKeepAliveLoop(session *ssh.Session) chan struct{} {
 				if val, ok := server.Options["ServerAliveInterval"]; ok && val != nil {
 					_, err := session.SendRequest("keepalive@bbr", true, nil)
 					if err != nil {
-
+						Log.Category("server").Error("keepAliveLoop fail", err)
 					}
 
 					t := time.Duration(server.Options["ServerAliveInterval"].(float64))
@@ -213,4 +230,57 @@ func pemKey(server *Server) (ssh.AuthMethod, error) {
 	}
 
 	return ssh.PublicKeys(signer), nil
+}
+
+func (server *Server) Edit() {
+	input := ""
+	Printer.Info("Name(default=" + server.Name + ")：")
+	fmt.Scanln(&input)
+	if input != "" {
+		server.Name = input
+		input = ""
+	}
+
+	Printer.Info("Ip(default=" + server.Ip + ")：")
+	fmt.Scanln(&input)
+	if input != "" {
+		server.Ip = input
+		input = ""
+	}
+
+	Printer.Info("Port(default=" + strconv.Itoa(server.Port) + ")：")
+	fmt.Scanln(&input)
+	if input != "" {
+		port, _ := strconv.Atoi(input)
+		server.Port = port
+		input = ""
+	}
+
+	Printer.Info("User(default=" + server.User + ")：")
+	fmt.Scanln(&input)
+	if input != "" {
+		server.User = input
+		input = ""
+	}
+
+	Printer.Info("Password(default=" + server.Password + ")：")
+	fmt.Scanln(&input)
+	if input != "" {
+		server.Password = input
+		input = ""
+	}
+
+	Printer.Info("Method(default=" + server.Method + ")：")
+	fmt.Scanln(&input)
+	if input != "" {
+		server.Method = input
+		input = ""
+	}
+
+	Printer.Info("Key(default=" + server.Key + ")：")
+	fmt.Scanln(&input)
+	if input != "" {
+		server.Key = input
+		input = ""
+	}
 }

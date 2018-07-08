@@ -13,7 +13,7 @@ function build() {
     echo "build ${package} ..."
     mkdir -p "./releases/${package}"
     CGO_ENABLED=0 GOOS=${os} GOARCH=${arch} go build -o "./releases/${package}/autossh" -ldflags "-X main.Version=${VERSION} -X main.Build=${BUILD}" main.go
-    cp ./servers.example.json "./releases/${package}/servers.json"
+    cp ./servers.example.json "./releases/${package}/config.json"
     cd ./releases/
     zip -r "./${package}.zip" "./${package}"
     echo "clean ${package}"
