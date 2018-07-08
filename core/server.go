@@ -25,6 +25,16 @@ type Server struct {
 	termHeight int
 }
 
+func (server *Server) Format() {
+	if server.Port == 0 {
+		server.Port = 22
+	}
+
+	if server.Method == "" {
+		server.Method = "password"
+	}
+}
+
 // 执行远程连接
 func (server *Server) Connect() {
 	auths, err := parseAuthMethods(server)

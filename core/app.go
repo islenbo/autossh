@@ -14,6 +14,13 @@ import (
 	"time"
 )
 
+type IndexType int
+
+const (
+	IndexTypeServer IndexType = iota
+	IndexTypeGroup
+)
+
 type Group struct {
 	GroupName string   `json:"group_name"`
 	Prefix    string   `json:"prefix"`
@@ -27,21 +34,35 @@ type Config struct {
 	Options    map[string]interface{} `json:"options"`
 }
 
+type ServerIndex struct {
+	indexType   IndexType
+	groupIndex  int
+	serverIndex int
+	server      *Server
+}
+
 type App struct {
-	ConfigPath string
-	config     Config
-	serverMap  map[string]*Server
+	ConfigPath  string
+	config      Config
+	serverIndex map[string]ServerIndex
 }
 
 // 执行脚本
 func (app *App) Init() {
-	app.serverMap = make(map[string]*Server)
+	app.serverIndex = make(map[string]ServerIndex)
 
 	// 解析配置
 	app.loadConfig()
 
-	app.loadServerMap()
+	app.loadServerMap(true)
 
+	app.show()
+}
+
+func (app *App) saveAndReload() {
+	app.saveConfig()
+	app.loadConfig()
+	app.loadServerMap(false)
 	app.show()
 }
 
@@ -58,7 +79,7 @@ func (app *App) show() {
 			return
 		}
 	} else {
-		server := app.serverMap[input]
+		server := app.serverIndex[input].server
 		Printer.Infoln("你选择了", server.Name)
 		Log.Category("app").Info("select server", server.Name)
 		server.Connect()
@@ -73,6 +94,12 @@ func (app *App) handleGlobalCmd(cmd string) bool {
 	case "edit":
 		app.handleEdit()
 		return false
+	case "add":
+		app.handleAdd()
+		return false
+	case "remove":
+		app.handleRemove()
+		return false
 	default:
 		Printer.Errorln("指令无效")
 		return false
@@ -81,7 +108,7 @@ func (app *App) handleGlobalCmd(cmd string) bool {
 
 // 编辑
 func (app *App) handleEdit() {
-	Printer.Info("请输入相应序号（exit退出编辑）：")
+	Printer.Info("请输入相应序号（exit退出当前操作）：")
 	id := ""
 	fmt.Scanln(&id)
 
@@ -90,16 +117,72 @@ func (app *App) handleEdit() {
 		return
 	}
 
-	server, ok := app.serverMap[id]
+	serverIndex, ok := app.serverIndex[id]
 	if !ok {
 		Printer.Errorln("序号不存在")
 		app.handleEdit()
 		return
 	}
 
+	serverIndex.server.Edit()
+	app.saveAndReload()
+}
+
+// 移除
+func (app *App) handleRemove() {
+	Printer.Info("请输入相应序号（exit退出当前操作）：")
+	id := ""
+	fmt.Scanln(&id)
+
+	if strings.ToLower(id) == "exit" {
+		app.show()
+		return
+	}
+
+	serverIndex, ok := app.serverIndex[id]
+	if !ok {
+		Printer.Errorln("序号不存在")
+		app.handleEdit()
+		return
+	}
+
+	if serverIndex.indexType == IndexTypeServer {
+		servers := app.config.Servers
+		app.config.Servers = append(servers[:serverIndex.serverIndex], servers[serverIndex.serverIndex+1:]...)
+	} else {
+		servers := app.config.Groups[serverIndex.groupIndex].Servers
+		servers = append(servers[:serverIndex.serverIndex], servers[serverIndex.serverIndex+1:]...)
+		app.config.Groups[serverIndex.groupIndex].Servers = servers
+	}
+
+	app.saveAndReload()
+}
+
+// 新增
+func (app *App) handleAdd() {
+	groups := make(map[string]*Group)
+	for i := range app.config.Groups {
+		group := &app.config.Groups[i]
+		groups[group.Prefix] = group
+		Printer.Info("["+group.Prefix+"]"+group.GroupName, "\t")
+	}
+	Printer.Infoln("[其他值]默认组")
+	Printer.Info("请输入要插入的组：")
+	g := ""
+	fmt.Scanln(&g)
+
+	server := Server{}
+	server.Format()
 	server.Edit()
-	app.saveConfig()
-	app.show()
+
+	group, ok := groups[g]
+	if ok {
+		group.Servers = append(group.Servers, server)
+	} else {
+		app.config.Servers = append(app.config.Servers, server)
+	}
+
+	app.saveAndReload()
 }
 
 // 保存配置文件
@@ -159,7 +242,7 @@ func (app *App) checkInput() (string, bool) {
 			return flag, true
 		}
 
-		if _, ok := app.serverMap[flag]; !ok {
+		if _, ok := app.serverIndex[flag]; !ok {
 			Printer.Errorln("输入有误，请重新输入")
 		} else {
 			return flag, false
@@ -173,9 +256,14 @@ func (app *App) checkInput() (string, bool) {
 func (app *App) isGlobalInput(flag string) bool {
 	switch flag {
 	case "edit":
-		return true
+		fallthrough
+	case "add":
+		fallthrough
+	case "remove":
+		fallthrough
 	case "exit":
 		return true
+
 	default:
 		return false
 	}
@@ -211,7 +299,8 @@ func (app *App) showServers() {
 	}
 
 	app.formatSeparator("", "=", maxlen)
-	Printer.Logln("", "[edit] 编辑", "\t", "[add] 添加", "\t", "[exit] 退出")
+	Printer.Logln("", "[add]  添加", "    ", "[edit] 编辑", "    ", "[remove]删除")
+	Printer.Logln("", "[exit]\t退出")
 	app.formatSeparator("", "=", maxlen)
 	Printer.Info("请输入序号或操作: ")
 }
@@ -240,33 +329,45 @@ func (app *App) separatorLength() float64 {
 }
 
 // 加载
-func (app *App) loadServerMap() {
+func (app *App) loadServerMap(check bool) {
 	Log.Category("app").Info("server count", len(app.config.Servers), "group count", len(app.config.Groups))
 
 	for i := range app.config.Servers {
 		server := &app.config.Servers[i]
+		server.Format()
 		flag := strconv.Itoa(i + 1)
 
-		if _, ok := app.serverMap[flag]; ok {
+		if _, ok := app.serverIndex[flag]; ok && check {
 			panic(errors.New("标识[" + flag + "]已存在，请检查您的配置文件"))
 		}
 
 		server.MergeOptions(app.config.Options, false)
-		app.serverMap[flag] = server
+		app.serverIndex[flag] = ServerIndex{
+			indexType:   IndexTypeServer,
+			groupIndex:  -1,
+			serverIndex: i,
+			server:      server,
+		}
 	}
 
 	for i := range app.config.Groups {
 		group := &app.config.Groups[i]
 		for j := range group.Servers {
 			server := &group.Servers[j]
+			server.Format()
 			flag := group.Prefix + strconv.Itoa(j+1)
 
-			if _, ok := app.serverMap[flag]; ok {
+			if _, ok := app.serverIndex[flag]; ok && check {
 				panic(errors.New("标识[" + flag + "]已存在，请检查您的配置文件"))
 			}
 
 			server.MergeOptions(app.config.Options, false)
-			app.serverMap[flag] = server
+			app.serverIndex[flag] = ServerIndex{
+				indexType:   IndexTypeGroup,
+				groupIndex:  i,
+				serverIndex: j,
+				server:      server,
+			}
 		}
 	}
 }
