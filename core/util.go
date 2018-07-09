@@ -12,6 +12,24 @@ import (
 	"unicode"
 )
 
+// 错误断言
+func ErrorAssert(err error, assert string) bool {
+	return strings.Contains(err.Error(), assert)
+}
+
+// 清屏
+func Clear() {
+	var cmd exec.Cmd
+	if "windows" == runtime.GOOS {
+		cmd = *exec.Command("cmd", "/c", "cls")
+	} else {
+		cmd = *exec.Command("clear")
+	}
+
+	cmd.Stdout = os.Stdout
+	cmd.Run()
+}
+
 // 计算字符宽度（中文）
 func ZhLen(str string) float64 {
 	length := 0.0

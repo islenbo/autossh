@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"time"
 	"fmt"
+	"strings"
 )
 
 type Server struct {
@@ -61,6 +62,11 @@ func (server *Server) Connect() {
 	addr := server.Ip + ":" + strconv.Itoa(server.Port)
 	client, err := ssh.Dial("tcp", addr, config)
 	if err != nil {
+		if ErrorAssert(err, "ssh: unable to authenticate") {
+			Printer.Errorln("连接失败，请检查密码/密钥是否有误")
+			return
+		}
+
 		Printer.Errorln("ssh dial fail:", err)
 		Log.Category("server").Error("ssh dial fail", err)
 		return
@@ -195,7 +201,7 @@ func (server *Server) MergeOptions(options map[string]interface{}, overwrite boo
 func parseAuthMethods(server *Server) ([]ssh.AuthMethod, error) {
 	sshs := []ssh.AuthMethod{}
 
-	switch server.Method {
+	switch strings.ToLower(server.Method) {
 	case "password":
 		sshs = append(sshs, ssh.Password(server.Password))
 		break

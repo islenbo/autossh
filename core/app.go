@@ -68,6 +68,8 @@ func (app *App) saveAndReload() {
 
 func (app *App) show() {
 	//for {
+	Clear()
+
 	// 输出server
 	app.showServers()
 
@@ -299,7 +301,7 @@ func (app *App) showServers() {
 	}
 
 	app.formatSeparator("", "=", maxlen)
-	Printer.Logln("", "[add]  添加", "    ", "[edit] 编辑", "    ", "[remove]删除")
+	Printer.Logln("", "[add]  添加", "    ", "[edit] 编辑", "    ", "[remove] 删除")
 	Printer.Logln("", "[exit]\t退出")
 	app.formatSeparator("", "=", maxlen)
 	Printer.Info("请输入序号或操作: ")
