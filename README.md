@@ -2,7 +2,7 @@
 
 go写的一个ssh远程客户端。可一键登录远程服务器，主要用来弥补Mac/Linux Terminal ssh无法保存密码的不足。
 
-![演示](https://github.com/islenbo/autossh/raw/master/doc/images/ezgif-4-c8145f96ce.gif)
+![演示](https://github.com/islenbo/autossh/raw/master/doc/images/ezgif-1-a4ddae192f.gif)
 
 ## 版本说明
 这是一个全新的autossh，无法兼容v0.2及以下版本，升级前请做好备份！新版配置文件由原来的`servers.json`改为`config.json`，
