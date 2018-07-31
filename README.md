@@ -1,6 +1,6 @@
 # autossh
 
-go写的一个ssh远程客户端。可一键登录远程服务器，主要用来弥补Mac/Linux Terminal ssh无法保存密码的不足。
+一个ssh远程客户端，可一键登录远程服务器，主要用来弥补Mac/Linux Terminal ssh无法保存密码的不足。
 
 ![演示](https://raw.githubusercontent.com/islenbo/autossh/b3e18c35ebced882ace59be7843d9a58d1ac74d7/doc/images/ezgif-1-a4ddae192f.gif)
 
