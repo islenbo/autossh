@@ -1,2 +1,6 @@
 servers.json
 releases/
+.idea/
+main
+test.go
+app.log
