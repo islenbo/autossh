@@ -1,7 +1,7 @@
 package main
 
 import (
-	"autossh/core"
+	"../autossh/core"
 	"os"
 	"path/filepath"
 	"fmt"

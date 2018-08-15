@@ -20,6 +20,7 @@ type Server struct {
 	Password string                 `json:"password"`
 	Method   string                 `json:"method"`
 	Key      string                 `json:"key"`
+	Ciphers  []string               `json:"ciphers"`
 	Options  map[string]interface{} `json:"options"`
 
 	termWidth  int
@@ -49,6 +50,9 @@ func (server *Server) Connect() {
 	config := &ssh.ClientConfig{
 		User: server.User,
 		Auth: auths,
+		Config: ssh.Config{
+			Ciphers: server.Ciphers,
+		},
 		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 			return nil
 		},
@@ -57,6 +61,10 @@ func (server *Server) Connect() {
 	// 默认端口为22
 	if server.Port == 0 {
 		server.Port = 22
+	}
+
+	if server.Ciphers != nil {
+		server.Ciphers = []string{"aes128-gcm@openssh.com", "chacha20-poly1305@openssh.com", "aes128-ctr", "aes192-ctr", "aes256-ctr"}
 	}
 
 	addr := server.Ip + ":" + strconv.Itoa(server.Port)
