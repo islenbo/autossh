@@ -1,6 +1,8 @@
 servers.json
+config.json
 releases/
-.idea/
+.idea
 main
 test.go
 app.log
+vendor
