@@ -3,18 +3,13 @@ package app
 import (
 	"autossh/src/app/commands"
 	"autossh/src/utils"
-	"bytes"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strconv"
-	"strings"
-	"time"
 )
 
 const (
@@ -123,7 +118,6 @@ func loadServerMap(check bool) error {
 }
 
 func show() (err error) {
-	//for {
 	if err = utils.Clear(); err != nil {
 		return err
 	}
@@ -132,10 +126,11 @@ func show() (err error) {
 	showServers()
 
 	// 监听输入
-	input, isGlobal := checkInput()
-	if isGlobal {
-		end := handleGlobalCmd(input)
-		if end {
+	input, isOperation := checkInput()
+	if isOperation {
+		operation := operations[input]
+		operation.Process()
+		if operation.End {
 			return nil
 		}
 	} else {
@@ -166,19 +161,20 @@ func showServers() {
 	}
 
 	formatSeparator("", "=", maxlen)
-	utils.Logln("", "[add]  添加", "    ", "[edit] 编辑", "    ", "[remove] 删除")
-	utils.Logln("", "[exit]\t退出")
+
+	showMenu()
+
 	formatSeparator("", "=", maxlen)
 	utils.Info("请输入序号或操作: ")
 }
 
 // 检查输入
-func checkInput() (ipt string, isGlobal bool) {
+func checkInput() (ipt string, isOpt bool) {
 	for {
 		fmt.Scanln(&ipt)
 
-		if isGlobalInput(ipt) {
-			isGlobal = true
+		if _, exists := operations[ipt]; exists {
+			isOpt = true
 			break
 		}
 
@@ -186,16 +182,16 @@ func checkInput() (ipt string, isGlobal bool) {
 			utils.Errorln("输入有误，请重新输入")
 			continue
 		} else {
-			isGlobal = false
+			isOpt = false
 			break
 		}
 	}
 
-	return ipt, isGlobal
+	return ipt, isOpt
 }
 
 func separatorLength() float64 {
-	maxlength := 50.0
+	maxlength := 60.0
 	for _, group := range appConfig.Groups {
 		length := utils.ZhLen(group.GroupName)
 		if length > maxlength {
@@ -204,23 +200,6 @@ func separatorLength() float64 {
 	}
 
 	return maxlength
-}
-
-// 判断是否全局输入
-func isGlobalInput(flag string) bool {
-	switch flag {
-	case "edit":
-		fallthrough
-	case "add":
-		fallthrough
-	case "remove":
-		fallthrough
-	case "exit":
-		return true
-
-	default:
-		return false
-	}
 }
 
 func formatSeparator(title string, c string, maxlength float64) {
@@ -242,113 +221,6 @@ func recordServer(flag string, server Server) string {
 	}
 }
 
-// TODO 将全局处理抽取重构
-func handleGlobalCmd(cmd string) bool {
-	switch strings.ToLower(cmd) {
-	case "exit":
-		return true
-	case "edit":
-		handleEdit()
-		return false
-	case "add":
-		handleAdd()
-		return false
-	case "remove":
-		handleRemove()
-		return false
-	default:
-		utils.Errorln("指令无效")
-		return false
-	}
-}
-
-// 编辑
-func handleEdit() {
-	utils.Info("请输入相应序号（exit退出当前操作）：")
-	id := ""
-	fmt.Scanln(&id)
-
-	if strings.ToLower(id) == "exit" {
-		show()
-		return
-	}
-
-	serverIndex, ok := serverIndex[id]
-	if !ok {
-		utils.Errorln("序号不存在")
-		handleEdit()
-		return
-	}
-
-	serverIndex.server.Edit()
-	saveAndReload()
-}
-
-// 新增
-func handleAdd() {
-	groups := make(map[string]*Group)
-	for i := range appConfig.Groups {
-		group := &appConfig.Groups[i]
-		groups[group.Prefix] = group
-		utils.Info("["+group.Prefix+"]"+group.GroupName, "\t")
-	}
-	utils.Infoln("[其他值]默认组")
-	utils.Info("请输入要插入的组：")
-	g := ""
-	fmt.Scanln(&g)
-
-	server := Server{}
-	server.Format()
-	server.Edit()
-
-	group, ok := groups[g]
-	if ok {
-		group.Servers = append(group.Servers, server)
-	} else {
-		appConfig.Servers = append(appConfig.Servers, server)
-	}
-
-	saveAndReload()
-}
-
-// 移除
-func handleRemove() {
-	utils.Info("请输入相应序号（exit退出当前操作）：")
-	id := ""
-	fmt.Scanln(&id)
-
-	if strings.ToLower(id) == "exit" {
-		show()
-		return
-	}
-
-	serverIndex, ok := serverIndex[id]
-	if !ok {
-		utils.Errorln("序号不存在")
-		handleEdit()
-		return
-	}
-
-	if serverIndex.indexType == IndexTypeServer {
-		servers := appConfig.Servers
-		appConfig.Servers = append(servers[:serverIndex.serverIndex], servers[serverIndex.serverIndex+1:]...)
-	} else {
-		servers := appConfig.Groups[serverIndex.groupIndex].Servers
-		servers = append(servers[:serverIndex.serverIndex], servers[serverIndex.serverIndex+1:]...)
-		appConfig.Groups[serverIndex.groupIndex].Servers = servers
-	}
-
-	saveAndReload()
-}
-
-func saveAndReload() (err error) {
-	if err = saveConfig(); err != nil {
-		return errors.New("保存配置文件失败：" + err.Error())
-	}
-
-	return loadConfigAndShow()
-}
-
 func loadConfigAndShow() (err error) {
 	if err = loadConfig(); err != nil {
 		return err
@@ -362,51 +234,5 @@ func loadConfigAndShow() (err error) {
 		return err
 	}
 
-	return nil
-}
-
-// 保存配置文件
-func saveConfig() error {
-	b, err := json.Marshal(appConfig)
-	if err != nil {
-		return err
-	}
-
-	var out bytes.Buffer
-	err = json.Indent(&out, b, "", "\t")
-	if err != nil {
-		return err
-	}
-
-	err = backConfig()
-	if err != nil {
-		return err
-	}
-
-	return ioutil.WriteFile(varConfig.Value, out.Bytes(), os.ModePerm)
-}
-
-func backConfig() error {
-	srcFile, err := os.Open(varConfig.Value)
-	if err != nil {
-		return err
-	}
-
-	defer srcFile.Close()
-
-	path, _ := filepath.Abs(filepath.Dir(varConfig.Value))
-	backupFile := path + "/config-" + time.Now().Format("20060102150405") + ".json"
-	desFile, err := os.Create(backupFile)
-	if err != nil {
-		return err
-	}
-	defer desFile.Close()
-
-	_, err = io.Copy(desFile, srcFile)
-	if err != nil {
-		return err
-	}
-
-	utils.Infoln("配置文件已备份：", backupFile)
 	return nil
 }

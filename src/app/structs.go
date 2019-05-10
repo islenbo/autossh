@@ -35,3 +35,10 @@ type Server struct {
 	termWidth  int
 	termHeight int
 }
+
+type Operation struct {
+	Key     string
+	Label   string
+	End     bool
+	Process func()
+}

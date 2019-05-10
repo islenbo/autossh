@@ -88,6 +88,8 @@
 - A: Windows下有很多ssh工具，autossh主要是面向Mac/Linux群体。
 
 ## 编译
+export GO111MODULE="on"
+export GOFLAGS=" -mod=vendor"
 go build main.go
 
 ## 依赖包
