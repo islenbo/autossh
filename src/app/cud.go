@@ -94,7 +94,7 @@ func handleRemove() {
 }
 
 func saveAndReload() (err error) {
-	if err = saveConfig(); err != nil {
+	if err = saveConfig(true); err != nil {
 		return errors.New("保存配置文件失败：" + err.Error())
 	}
 
@@ -102,7 +102,7 @@ func saveAndReload() (err error) {
 }
 
 // 保存配置文件
-func saveConfig() error {
+func saveConfig(backup bool) error {
 	b, err := json.Marshal(appConfig)
 	if err != nil {
 		return err
@@ -114,9 +114,11 @@ func saveConfig() error {
 		return err
 	}
 
-	err = backConfig()
-	if err != nil {
-		return err
+	if backup {
+		err = backConfig()
+		if err != nil {
+			return err
+		}
 	}
 
 	return ioutil.WriteFile(varConfig.Value, out.Bytes(), os.ModePerm)

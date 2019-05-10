@@ -40,7 +40,8 @@
           "user": "root",
           "password": "root"
         }
-      ]
+      ],
+      "collapse": false // 是否折叠该分组
     },
     {
       "group_name": "group2",

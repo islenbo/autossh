@@ -13,6 +13,7 @@ type Group struct {
 	GroupName string   `json:"group_name"`
 	Prefix    string   `json:"prefix"`
 	Servers   []Server `json:"servers"`
+	Collapse  bool     `json:"collapse"`
 }
 
 type ServerIndex struct {

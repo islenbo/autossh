@@ -17,6 +17,12 @@ const (
 	IndexTypeGroup
 )
 
+const (
+	InputCmdOpt int = iota
+	InputCmdServer
+	InputCmdGroupPrefix
+)
+
 var (
 	Version string
 	Build   string
@@ -126,17 +132,29 @@ func show() (err error) {
 	showServers()
 
 	// 监听输入
-	input, isOperation := checkInput()
-	if isOperation {
-		operation := operations[input]
-		operation.Process()
-		if operation.End {
-			return nil
+	input, inputCmd, groupIndex := checkInput()
+	switch inputCmd {
+	case InputCmdOpt:
+		{
+			operation := operations[input]
+			operation.Process()
+			if operation.End {
+				return nil
+			}
 		}
-	} else {
-		server := serverIndex[input].server
-		utils.Infoln("你选择了", server.Name)
-		server.Connect()
+	case InputCmdServer:
+		{
+			server := serverIndex[input].server
+			utils.Infoln("你选择了", server.Name)
+			server.Connect()
+		}
+	case InputCmdGroupPrefix:
+		{
+			group := &appConfig.Groups[groupIndex]
+			group.Collapse = !group.Collapse
+			_ = saveConfig(false)
+			show()
+		}
 	}
 
 	return nil
@@ -154,9 +172,18 @@ func showServers() {
 			continue
 		}
 
-		formatSeparator(" "+group.GroupName+" ", "_", maxlen)
-		for i, server := range group.Servers {
-			utils.Logln(recordServer(group.Prefix+strconv.Itoa(i+1), server))
+		var collapseNotice = ""
+		if group.Collapse {
+			collapseNotice = "[" + group.Prefix + " ↓]"
+		} else {
+			collapseNotice = "[" + group.Prefix + " ↑]"
+		}
+
+		formatSeparator(" "+group.GroupName+" "+collapseNotice+" ", "_", maxlen)
+		if !group.Collapse {
+			for i, server := range group.Servers {
+				utils.Logln(recordServer(group.Prefix+strconv.Itoa(i+1), server))
+			}
 		}
 	}
 
@@ -169,25 +196,36 @@ func showServers() {
 }
 
 // 检查输入
-func checkInput() (ipt string, isOpt bool) {
+func checkInput() (ipt string, inputCmd int, groupIndex int) {
 	for {
 		fmt.Scanln(&ipt)
 
 		if _, exists := operations[ipt]; exists {
-			isOpt = true
+			inputCmd = InputCmdOpt
 			break
 		}
 
-		if _, ok := serverIndex[ipt]; !ok {
-			utils.Errorln("输入有误，请重新输入")
-			continue
-		} else {
-			isOpt = false
+		if _, ok := serverIndex[ipt]; ok {
+			inputCmd = InputCmdServer
 			break
 		}
+
+		groupIndex = -1
+		for index, group := range appConfig.Groups {
+			if group.Prefix == ipt {
+				inputCmd = InputCmdGroupPrefix
+				groupIndex = index
+				break
+			}
+		}
+		if groupIndex != -1 {
+			break
+		}
+
+		utils.Errorln("输入有误，请重新输入")
 	}
 
-	return ipt, isOpt
+	return ipt, inputCmd, groupIndex
 }
 
 func separatorLength() float64 {
