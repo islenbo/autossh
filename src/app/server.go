@@ -2,7 +2,9 @@ package app
 
 import (
 	"autossh/src/utils"
+	"errors"
 	"fmt"
+	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
 	"io/ioutil"
@@ -94,18 +96,16 @@ func (server *Server) Edit() {
 	}
 }
 
-// 执行远程连接
-func (server *Server) Connect() {
-	auths, err := parseAuthMethods(server)
-
+// 生成SSH Client
+func (server *Server) GetSshClient() (*ssh.Client, error) {
+	auth, err := parseAuthMethods(server)
 	if err != nil {
-		utils.Errorln("鉴权出错:", err)
-		return
+		return nil, err
 	}
 
 	config := &ssh.ClientConfig{
 		User: server.User,
-		Auth: auths,
+		Auth: auth,
 		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 			return nil
 		},
@@ -117,22 +117,40 @@ func (server *Server) Connect() {
 	}
 
 	addr := server.Ip + ":" + strconv.Itoa(server.Port)
+
 	client, err := ssh.Dial("tcp", addr, config)
 	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
+}
+
+// 生成Sftp Client
+func (server *Server) GetSftpClient() (*sftp.Client, error) {
+	sshClient, err := server.GetSshClient()
+	if err == nil {
+		return sftp.NewClient(sshClient)
+	} else {
+		return nil, err
+	}
+}
+
+// 执行远程连接
+func (server *Server) Connect() error {
+	client, err := server.GetSshClient()
+	if err != nil {
 		if utils.ErrorAssert(err, "ssh: unable to authenticate") {
-			utils.Errorln("连接失败，请检查密码/密钥是否有误")
-			return
+			return errors.New("连接失败，请检查密码/密钥是否有误")
 		}
 
-		utils.Errorln("ssh dial fail:", err)
-		return
+		return errors.New("ssh dial fail:" + err.Error())
 	}
 	defer client.Close()
 
 	session, err := client.NewSession()
 	if err != nil {
-		utils.Errorln("create session fail:", err)
-		return
+		return errors.New("create session fail:" + err.Error())
 	}
 
 	defer session.Close()
@@ -140,8 +158,7 @@ func (server *Server) Connect() {
 	fd := int(os.Stdin.Fd())
 	oldState, err := terminal.MakeRaw(fd)
 	if err != nil {
-		utils.Errorln("创建文件描述符出错:", err)
-		return
+		return errors.New("创建文件描述符出错:" + err.Error())
 	}
 
 	stopKeepAliveLoop := server.startKeepAliveLoop(session)
@@ -161,8 +178,7 @@ func (server *Server) Connect() {
 
 	server.termWidth, server.termHeight, _ = terminal.GetSize(fd)
 	if err := session.RequestPty("xterm-256color", server.termHeight, server.termWidth, modes); err != nil {
-		utils.Errorln("创建终端出错:", err)
-		return
+		return errors.New("创建终端出错:" + err.Error())
 	}
 
 	winChange := server.listenWindowChange(session, fd)
@@ -170,17 +186,15 @@ func (server *Server) Connect() {
 
 	err = session.Shell()
 	if err != nil {
-		utils.Errorln("执行Shell出错:", err)
-		return
+		return errors.New("执行Shell出错:" + err.Error())
 	}
 
 	err = session.Wait()
 	if err != nil {
-		//Printer.Errorln("执行Wait出错:", err)
-		//Log.Category("server").Error("执行Wait出错", err)
-		// TODO 错误Log
-		return
+		return errors.New("执行Wait出错:" + err.Error())
 	}
+
+	return nil
 }
 
 // 解析鉴权方式

@@ -15,13 +15,12 @@ import (
 )
 
 // 编辑
-func handleEdit() {
+func handleEdit(...interface{}) {
 	utils.Info("请输入相应序号（exit退出当前操作）：")
 	id := ""
 	fmt.Scanln(&id)
 
 	if strings.ToLower(id) == "exit" {
-		_ = show()
 		return
 	}
 
@@ -37,7 +36,7 @@ func handleEdit() {
 }
 
 // 新增
-func handleAdd() {
+func handleAdd(...interface{}) {
 	groups := make(map[string]*Group)
 	for i := range appConfig.Groups {
 		group := &appConfig.Groups[i]
@@ -64,20 +63,19 @@ func handleAdd() {
 }
 
 // 移除
-func handleRemove() {
+func handleRemove(...interface{}) {
 	utils.Info("请输入相应序号（exit退出当前操作）：")
 	id := ""
 	fmt.Scanln(&id)
 
 	if strings.ToLower(id) == "exit" {
-		show()
 		return
 	}
 
 	serverIndex, ok := serverIndex[id]
 	if !ok {
 		utils.Errorln("序号不存在")
-		handleEdit()
+		handleRemove()
 		return
 	}
 

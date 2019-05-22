@@ -23,11 +23,11 @@ func ParsePath(path string) (string, error) {
 		}
 
 		return home + string(str[1:]), nil
-	} else if firstKey == "." {
+	} else if firstKey == "/" {
+		return path, nil
+	} else {
 		p, _ := filepath.Abs(filepath.Dir(os.Args[0]))
 		return p + "/" + path, nil
-	} else {
-		return path, nil
 	}
 }
 
@@ -81,4 +81,24 @@ func homeWindows() (string, error) {
 	}
 
 	return home, nil
+}
+
+// 判断文件是否存在
+func FileIsExists(file string) (bool, error) {
+	file, err := ParsePath(file)
+	if err != nil {
+		return false, err
+	}
+
+	_, err = os.Stat(file)
+	if err != nil {
+		return false, err
+		//if os.IsNotExist(err) {
+		//	return false, err
+		//} else {
+		//	// unknown error
+		//}
+	}
+
+	return true, nil
 }

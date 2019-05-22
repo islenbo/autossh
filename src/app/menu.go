@@ -17,7 +17,7 @@ func init() {
 			{Key: "remove", Label: "删除", Process: handleRemove},
 		},
 		{
-			{Key: "ud", Label: "上传/下载"},
+			{Key: "cp", Label: "文件复制", Process: handleCp},
 			{Key: "exit", Label: "退出", End: true},
 		},
 	}

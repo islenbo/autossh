@@ -6,10 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
-	"fmt"
 	"io/ioutil"
-	"os"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -56,17 +55,12 @@ func Run() {
 
 	varConfig.Process()
 
-	_, err := os.Stat(varConfig.Value)
-	if err != nil {
-		if os.IsNotExist(err) {
-			utils.Errorln("config file", varConfig.Value+" not exists")
-		} else {
-			utils.Errorln("unknown error", err)
-		}
+	if exists, _ := utils.FileIsExists(varConfig.Value); !exists {
+		utils.Errorln("Can't read config file", varConfig.Value)
 		return
 	}
 
-	if err = loadConfigAndShow(); err != nil {
+	if err := loadConfigAndShow(); err != nil {
 		utils.Errorln("加载配置失败：" + err.Error())
 		return
 	}
@@ -131,33 +125,42 @@ func show() (err error) {
 	// 输出server
 	showServers()
 
-	// 监听输入
-	input, inputCmd, groupIndex := checkInput()
+	scanInput()
+
+	return nil
+}
+
+// 监听输入
+func scanInput() {
+	cmd, inputCmd, extInfo := checkInput()
 	switch inputCmd {
 	case InputCmdOpt:
 		{
-			operation := operations[input]
-			operation.Process()
-			if operation.End {
-				return nil
+			operation := operations[cmd]
+			if operation.Process != nil {
+				operation.Process(extInfo)
+				if !operation.End {
+					show()
+				}
 			}
 		}
 	case InputCmdServer:
 		{
-			server := serverIndex[input].server
+			server := serverIndex[cmd].server
 			utils.Infoln("你选择了", server.Name)
-			server.Connect()
+			err := server.Connect()
+			if err != nil {
+				utils.Errorln(err)
+			}
 		}
 	case InputCmdGroupPrefix:
 		{
-			group := &appConfig.Groups[groupIndex]
+			group := &appConfig.Groups[extInfo.(int)]
 			group.Collapse = !group.Collapse
 			_ = saveConfig(false)
 			show()
 		}
 	}
-
-	return nil
 }
 
 func showServers() {
@@ -196,25 +199,30 @@ func showServers() {
 }
 
 // 检查输入
-func checkInput() (ipt string, inputCmd int, groupIndex int) {
+func checkInput() (cmd string, inputCmd int, extInfo interface{}) {
 	for {
-		fmt.Scanln(&ipt)
+		ipt := ""
+		utils.Scanln(&ipt)
+		ipts := strings.Split(ipt, " ")
+		cmd = ipts[0]
 
-		if _, exists := operations[ipt]; exists {
+		if _, exists := operations[cmd]; exists {
 			inputCmd = InputCmdOpt
+			extInfo = ipts[1:]
 			break
 		}
 
-		if _, ok := serverIndex[ipt]; ok {
+		if _, ok := serverIndex[cmd]; ok {
 			inputCmd = InputCmdServer
 			break
 		}
 
-		groupIndex = -1
+		groupIndex := -1
 		for index, group := range appConfig.Groups {
-			if group.Prefix == ipt {
+			if group.Prefix == cmd {
 				inputCmd = InputCmdGroupPrefix
 				groupIndex = index
+				extInfo = index
 				break
 			}
 		}
@@ -225,7 +233,7 @@ func checkInput() (ipt string, inputCmd int, groupIndex int) {
 		utils.Errorln("输入有误，请重新输入")
 	}
 
-	return ipt, inputCmd, groupIndex
+	return cmd, inputCmd, extInfo
 }
 
 func separatorLength() float64 {

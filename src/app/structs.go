@@ -41,5 +41,5 @@ type Operation struct {
 	Key     string
 	Label   string
 	End     bool
-	Process func()
+	Process func(...interface{})
 }
