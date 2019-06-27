@@ -189,10 +189,10 @@ func (server *Server) Connect() error {
 		return errors.New("执行Shell出错:" + err.Error())
 	}
 
-	err = session.Wait()
-	if err != nil {
-		return errors.New("执行Wait出错:" + err.Error())
-	}
+	_ = session.Wait()
+	//if err != nil {
+	//	return errors.New("执行Wait出错:" + err.Error())
+	//}
 
 	return nil
 }

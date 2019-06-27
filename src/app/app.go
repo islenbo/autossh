@@ -32,28 +32,47 @@ var (
 
 	appConfig   Config
 	serverIndex = make(map[string]ServerIndex)
+
+	defaultServer = ""
 )
 
 func init() {
-	flag.BoolVar(&varVersion.Value, "v", varVersion.Value, "显示版本信息。")
-	flag.BoolVar(&varHelp.Value, "h", varVersion.Value, "显示帮助信息。")
-	flag.StringVar(&varConfig.Value, "c", varConfig.Value, "指定配置文件。")
+	flag.BoolVar(&varVersion.Value, "v", varVersion.Value, "")
+	flag.BoolVar(&varVersion.Value, "version", varVersion.Value, "")
+
+	flag.BoolVar(&varHelp.Value, "h", varVersion.Value, "")
+	flag.BoolVar(&varHelp.Value, "help", varVersion.Value, "")
+
+	flag.StringVar(&varConfig.Value, "c", varConfig.Value, "")
+	flag.StringVar(&varConfig.Value, "config", varConfig.Value, "")
 	flag.Parse()
+
+	if len(flag.Args()) > 0 {
+		defaultServer = flag.Arg(0)
+	}
+}
+
+func parse() commands.Command {
+	if varVersion.Value {
+		return &varVersion
+	}
+
+	if varHelp.Value {
+		return &varHelp
+	}
+
+	return &varConfig
 }
 
 // 启动
 func Run() {
-	if varVersion.Value {
-		varVersion.Process()
-		return
-	}
+	cmd := parse()
 
-	if varHelp.Value {
-		varHelp.Process()
-		return
+	if cmd != nil {
+		if cmd.Process() {
+			return
+		}
 	}
-
-	varConfig.Process()
 
 	if exists, _ := utils.FileIsExists(varConfig.Value); !exists {
 		utils.Errorln("Can't read config file", varConfig.Value)
@@ -91,6 +110,7 @@ func loadServerMap(check bool) error {
 			serverIndex: i,
 			server:      server,
 		}
+		serverIndex[server.Alias] = serverIndex[index]
 	}
 
 	for i := range appConfig.Groups {
@@ -111,6 +131,7 @@ func loadServerMap(check bool) error {
 				serverIndex: j,
 				server:      server,
 			}
+			serverIndex[server.Alias] = serverIndex[index]
 		}
 	}
 
@@ -165,7 +186,7 @@ func scanInput() {
 
 func showServers() {
 	maxlen := separatorLength()
-	formatSeparator(" 欢迎使用 Auto SSH ", "=", maxlen)
+	utils.Infoln(utils.FormatSeparator(" 欢迎使用 Auto SSH ", "=", maxlen))
 	for i, server := range appConfig.Servers {
 		utils.Logln(recordServer(strconv.Itoa(i+1), server))
 	}
@@ -182,7 +203,7 @@ func showServers() {
 			collapseNotice = "[" + group.Prefix + " ↑]"
 		}
 
-		formatSeparator(" "+group.GroupName+" "+collapseNotice+" ", "_", maxlen)
+		utils.Infoln(utils.FormatSeparator(" "+group.GroupName+" "+collapseNotice+" ", "_", maxlen))
 		if !group.Collapse {
 			for i, server := range group.Servers {
 				utils.Logln(recordServer(group.Prefix+strconv.Itoa(i+1), server))
@@ -190,11 +211,11 @@ func showServers() {
 		}
 	}
 
-	formatSeparator("", "=", maxlen)
+	utils.Infoln(utils.FormatSeparator("", "=", maxlen))
 
 	showMenu()
 
-	formatSeparator("", "=", maxlen)
+	utils.Infoln(utils.FormatSeparator("", "=", maxlen))
 	utils.Info("请输入序号或操作: ")
 }
 
@@ -202,7 +223,13 @@ func showServers() {
 func checkInput() (cmd string, inputCmd int, extInfo interface{}) {
 	for {
 		ipt := ""
-		utils.Scanln(&ipt)
+		if defaultServer == "" {
+			utils.Scanln(&ipt)
+		} else {
+			ipt = defaultServer
+			defaultServer = ""
+		}
+
 		ipts := strings.Split(ipt, " ")
 		cmd = ipts[0]
 
@@ -248,22 +275,16 @@ func separatorLength() float64 {
 	return maxlength
 }
 
-func formatSeparator(title string, c string, maxlength float64) {
-
-	charslen := int((maxlength - utils.ZhLen(title)) / 2)
-	chars := ""
-	for i := 0; i < charslen; i++ {
-		chars += c
+func recordServer(flag string, server Server) string {
+	alias := ""
+	if server.Alias != "" {
+		alias = "|" + server.Alias
 	}
 
-	utils.Infoln(chars + title + chars)
-}
-
-func recordServer(flag string, server Server) string {
 	if appConfig.ShowDetail {
-		return " [" + flag + "]" + "\t" + server.Name + " [" + server.User + "@" + server.Ip + "]"
+		return " [" + flag + alias + "]" + "\t" + server.Name + " [" + server.User + "@" + server.Ip + "]"
 	} else {
-		return " [" + flag + "]" + "\t" + server.Name
+		return " [" + flag + alias + "]" + "\t" + server.Name
 	}
 }
 

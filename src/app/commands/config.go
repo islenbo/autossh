@@ -8,7 +8,7 @@ type Config struct {
 	Value string
 }
 
-func (config *Config) Process() {
+func (config *Config) Process() bool {
 	if config.Value == "" {
 		config.Value = "./config.json"
 	} else {
@@ -19,4 +19,6 @@ func (config *Config) Process() {
 			config.Value = ""
 		}
 	}
+
+	return false
 }

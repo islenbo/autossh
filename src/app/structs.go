@@ -32,6 +32,7 @@ type Server struct {
 	Method   string                 `json:"method"`
 	Key      string                 `json:"key"`
 	Options  map[string]interface{} `json:"options"`
+	Alias    string                 `json:"alias"`
 
 	termWidth  int
 	termHeight int
