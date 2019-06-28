@@ -5,7 +5,9 @@ cd $(dirname $0)
 mkdir -p ~/autossh/
 cp ./autossh ~/autossh/
 
-if [[ ! -f "~/autossh/config.json" ]];then
+CONFIG_FILE=`cd ~/autossh/ && pwd`/config.json
+if [[ ! -f ${CONFIG_FILE} ]]; then
+    echo "not exists"
     cp ./config.json ~/autossh/
 fi
 
