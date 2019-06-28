@@ -1,26 +1,26 @@
 {
-  "show_detail": true, // 显示主机详情
-  "options": { // 全局配置
-    "ServerAliveInterval": 30 // 发送心跳包时间，同 ssh -o ServerAliveInterval=30
+  "show_detail": true,
+  "options": {
+    "ServerAliveInterval": 30
   },
   "servers": [
     {
-      "name": "vagrant", // 显示名称
-      "ip": "192.168.33.10", // 主机地址
-      "port": 22, // 端口号，可省略，默认为22
-      "user": "root", // 用户名
-      "password": "vagrant", // 密码，使用无密码的key登录时可省略
-      "method": "password", // 认证方式，可省略，默认值为password，可选项有password、key
-      "key": "", // 密钥路径，method=key时有效，可省略，默认为~/.ssh/id_rsa
-      "options": { // 自定义配置，会覆盖配置中相同的值
+      "name": "example-password",
+      "ip": "example-password",
+      "port": 22,
+      "user": "example-password",
+      "password": "example-password",
+      "method": "example-password",
+      "key": "",
+      "options": {
         "ServerAliveInterval": 20
       },
-      "alias": "v" // 别名，可代替序号
+      "alias": "example"
     },
     {
-      "name": "vagrant-key",
-      "ip": "192.168.33.10",
-      "user": "root",
+      "name": "example-key",
+      "ip": "example-key",
+      "user": "example-key",
       "method": "key"
     }
   ],
@@ -31,24 +31,18 @@
       "servers": [
         {
           "name": "example1",
-          "ip": "192.168.33.10",
-          "user": "root",
-          "password": "root"
+          "ip": "example1",
+          "user": "example1",
+          "password": "example1"
         },
         {
           "name": "example2",
-          "ip": "192.168.33.10",
-          "user": "root",
-          "password": "root"
+          "ip": "example2",
+          "user": "example2",
+          "password": "example2"
         }
       ],
-      "collapse": false // 是否折叠该分组
-    },
-    {
-      "group_name": "group2",
-      "prefix": "b",
-      "servers": [
-      ]
+      "collapse": false
     }
   ]
 }
