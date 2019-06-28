@@ -172,6 +172,8 @@ func (server *Server) startKeepAliveLoop(session *ssh.Session) chan struct{} {
 
 					t := time.Duration(server.Options["ServerAliveInterval"].(float64))
 					time.Sleep(time.Second * t)
+				} else {
+					return
 				}
 			}
 		}
