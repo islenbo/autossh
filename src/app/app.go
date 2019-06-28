@@ -52,7 +52,13 @@ func parse() commands.Command {
 	flag.Parse()
 
 	if len(flag.Args()) > 0 {
-		defaultServer = flag.Arg(0)
+		arg := flag.Arg(0)
+		switch arg {
+		case "upgrade":
+			return &commands.Upgrade{Value: true, Version: Version}
+		default:
+			defaultServer = arg
+		}
 	}
 
 	if varVersion.Value {
@@ -225,20 +231,24 @@ func showServers() {
 func checkInput() (cmd string, inputCmd int, extInfo interface{}) {
 	for {
 		ipt := ""
+		skipOpt := false
 		if defaultServer == "" {
 			utils.Scanln(&ipt)
 		} else {
 			ipt = defaultServer
 			defaultServer = ""
+			skipOpt = true
 		}
 
 		ipts := strings.Split(ipt, " ")
 		cmd = ipts[0]
 
-		if _, exists := operations[cmd]; exists {
-			inputCmd = InputCmdOpt
-			extInfo = ipts[1:]
-			break
+		if skipOpt {
+			if _, exists := operations[cmd]; exists {
+				inputCmd = InputCmdOpt
+				extInfo = ipts[1:]
+				break
+			}
 		}
 
 		if _, ok := serverIndex[cmd]; ok {
