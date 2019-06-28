@@ -26,9 +26,9 @@ var (
 	Version string
 	Build   string
 
-	varVersion = commands.VersionInfo{Version: Version, Build: Build, Value: false}
-	varHelp    = commands.HelpInfo{Value: false}
-	varConfig  = commands.Config{Value: "./config.json"}
+	varVersion commands.VersionInfo
+	varHelp    commands.HelpInfo
+	varConfig  commands.Config
 
 	appConfig   Config
 	serverIndex = make(map[string]ServerIndex)
@@ -36,23 +36,25 @@ var (
 	defaultServer = ""
 )
 
-func init() {
-	flag.BoolVar(&varVersion.Value, "v", varVersion.Value, "")
-	flag.BoolVar(&varVersion.Value, "version", varVersion.Value, "")
+func parse() commands.Command {
+	varVersion = commands.VersionInfo{Version: Version, Build: Build, Value: false}
+	varHelp = commands.HelpInfo{Value: false}
+	varConfig = commands.Config{Value: "./config.json"}
 
-	flag.BoolVar(&varHelp.Value, "h", varVersion.Value, "")
-	flag.BoolVar(&varHelp.Value, "help", varVersion.Value, "")
+	flag.BoolVar(&varVersion.Value, "v", varVersion.Value, "版本信息")
+	flag.BoolVar(&varVersion.Value, "version", varVersion.Value, "版本信息")
 
-	flag.StringVar(&varConfig.Value, "c", varConfig.Value, "")
-	flag.StringVar(&varConfig.Value, "config", varConfig.Value, "")
+	flag.BoolVar(&varHelp.Value, "h", varVersion.Value, "帮助信息")
+	flag.BoolVar(&varHelp.Value, "help", varVersion.Value, "帮助信息")
+
+	flag.StringVar(&varConfig.Value, "c", varConfig.Value, "指定配置文件路径")
+	flag.StringVar(&varConfig.Value, "config", varConfig.Value, "指定配置文件路径")
 	flag.Parse()
 
 	if len(flag.Args()) > 0 {
 		defaultServer = flag.Arg(0)
 	}
-}
 
-func parse() commands.Command {
 	if varVersion.Value {
 		return &varVersion
 	}
