@@ -118,7 +118,9 @@ func loadServerMap(check bool) error {
 			serverIndex: i,
 			server:      server,
 		}
-		serverIndex[server.Alias] = serverIndex[index]
+		if server.Alias != "" {
+			serverIndex[server.Alias] = serverIndex[index]
+		}
 	}
 
 	for i := range appConfig.Groups {
@@ -140,7 +142,9 @@ func loadServerMap(check bool) error {
 				serverIndex: j,
 				server:      server,
 			}
-			serverIndex[server.Alias] = serverIndex[index]
+			if server.Alias != "" {
+				serverIndex[server.Alias] = serverIndex[index]
+			}
 		}
 	}
 

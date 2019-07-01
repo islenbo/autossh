@@ -96,7 +96,15 @@ func saveAndReload() (err error) {
 		return errors.New("保存配置文件失败：" + err.Error())
 	}
 
-	return loadConfigAndShow()
+	if err = loadConfig(); err != nil {
+		return err
+	}
+
+	if err = loadServerMap(false); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // 保存配置文件
