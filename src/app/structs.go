@@ -2,6 +2,13 @@ package app
 
 type IndexType int
 
+type LogMode string
+
+const (
+	LogModeCover  LogMode = "cover"
+	LogModeAppend LogMode = "append"
+)
+
 type Config struct {
 	ShowDetail bool                   `json:"show_detail"`
 	Servers    []Server               `json:"servers"`
@@ -33,9 +40,17 @@ type Server struct {
 	Key      string                 `json:"key"`
 	Options  map[string]interface{} `json:"options"`
 	Alias    string                 `json:"alias"`
+	Log      ServerLog              `json:"log"`
 
 	termWidth  int
 	termHeight int
+	groupName  string
+}
+
+type ServerLog struct {
+	Enable   bool    `json:"enable"`
+	Filename string  `json:"filename"`
+	Mode     LogMode `json:"mode"`
 }
 
 type Operation struct {

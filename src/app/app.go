@@ -126,6 +126,7 @@ func loadServerMap(check bool) error {
 		for j := range group.Servers {
 			server := &group.Servers[j]
 			server.Format()
+			server.groupName = group.GroupName
 			index := group.Prefix + strconv.Itoa(j+1)
 
 			if _, ok := serverIndex[index]; ok && check {

@@ -26,6 +26,6 @@ function build() {
 build darwin amd64 macOS
 
 # Linux
-# build linux amd64 linux
-# build linux 386 linux
-# build linux arm linux
+build linux amd64 linux
+build linux 386 linux
+build linux arm linux

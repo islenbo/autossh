@@ -164,9 +164,7 @@ func (server *Server) Connect() error {
 	stopKeepAliveLoop := server.startKeepAliveLoop(session)
 	defer close(stopKeepAliveLoop)
 
-	session.Stdout = os.Stdout
-	session.Stderr = os.Stderr
-	session.Stdin = os.Stdin
+	server.stdIO(session)
 
 	defer terminal.Restore(fd, oldState)
 
@@ -195,6 +193,56 @@ func (server *Server) Connect() error {
 	//}
 
 	return nil
+}
+
+// 重定向标准输入输出
+func (server *Server) stdIO(session *ssh.Session) {
+	session.Stderr = os.Stderr
+	session.Stdin = os.Stdin
+
+	if server.Log.Enable {
+		ch, _ := session.StdoutPipe()
+
+		go func() {
+			flag := os.O_RDWR | os.O_CREATE
+			switch server.Log.Mode {
+			case LogModeAppend:
+				flag = flag | os.O_APPEND
+			case LogModeCover:
+			}
+
+			f, _ := os.OpenFile(server.formatLogFilename(server.Log.Filename), flag, 0644)
+
+			for {
+				buff := [128]byte{}
+				n, _ := ch.Read(buff[:])
+				if n > 0 {
+					f.Write(buff[:n])
+					os.Stdout.Write(buff[:n])
+				}
+			}
+		}()
+	} else {
+		session.Stdout = os.Stdout
+	}
+}
+
+// 格式化日志文件名
+func (server *Server) formatLogFilename(filename string) string {
+	kvs := map[string]string{
+		"%g":  server.groupName,
+		"%n":  server.Name,
+		"%dt": time.Now().Format("2006-01-02-15-04-05"),
+		"%d":  time.Now().Format("2006-01-02"),
+		"%u":  server.User,
+		"%a":  server.Alias,
+	}
+
+	for k, v := range kvs {
+		filename = strings.ReplaceAll(filename, k, v)
+	}
+
+	return filename
 }
 
 // 解析鉴权方式
