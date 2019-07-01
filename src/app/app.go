@@ -244,7 +244,7 @@ func checkInput() (cmd string, inputCmd int, extInfo interface{}) {
 		ipts := strings.Split(ipt, " ")
 		cmd = ipts[0]
 
-		if skipOpt {
+		if !skipOpt {
 			if _, exists := operations[cmd]; exists {
 				inputCmd = InputCmdOpt
 				extInfo = ipts[1:]
