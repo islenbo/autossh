@@ -5,7 +5,14 @@
 ![演示](https://raw.githubusercontent.com/islenbo/autossh/b3e18c35ebced882ace59be7843d9a58d1ac74d7/doc/images/ezgif-1-a4ddae192f.gif)
 
 ## 功能说明
-- TODO 功能说明
+- 核心代码重构，使用go.mod管理依赖
+- 新增分组折叠功能
+- 新增自动更新检测功能
+- 新增一键安装脚本
+- 新增会话日志保存功能
+- 删除功能支持ctrl+d退出
+- 优化帮助菜单显示
+- 修复若干Bug
 
 ## 下载
 [https://github.com/islenbo/autossh/releases](https://github.com/islenbo/autossh/releases)
