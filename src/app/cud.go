@@ -64,11 +64,10 @@ func handleAdd(...interface{}) {
 
 // 移除
 func handleRemove(...interface{}) {
-	utils.Info("请输入相应序号（exit退出当前操作）：")
+	utils.Info("请输入相应序号：")
 	id := ""
-	fmt.Scanln(&id)
-
-	if strings.ToLower(id) == "exit" {
+	_, err := fmt.Scanln(&id)
+	if err == io.EOF {
 		return
 	}
 
