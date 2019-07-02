@@ -214,11 +214,16 @@ func (server *Server) stdIO(session *ssh.Session) {
 			f, _ := os.OpenFile(server.formatLogFilename(server.Log.Filename), flag, 0644)
 
 			for {
-				buff := [128]byte{}
+				buff := [4096]byte{}
 				n, _ := ch.Read(buff[:])
 				if n > 0 {
-					f.Write(buff[:n])
-					os.Stdout.Write(buff[:n])
+					if _, err := f.Write(buff[:n]); err != nil {
+						utils.Logger.Error("Write file buffer fail ", err)
+					}
+
+					if _, err := os.Stdout.Write(buff[:n]); err != nil {
+						utils.Logger.Error("Write stdout buffer fail ", err)
+					}
 				}
 			}
 		}()
@@ -308,8 +313,7 @@ func (server *Server) startKeepAliveLoop(session *ssh.Session) chan struct{} {
 				if val, ok := server.Options["ServerAliveInterval"]; ok && val != nil {
 					_, err := session.SendRequest("keepalive@bbr", true, nil)
 					if err != nil {
-						//Log.Category("server").Error("keepAliveLoop fail", err)
-						// TODO 错误日志
+						utils.Logger.Category("server").Error("keepAliveLoop fail", err)
 					}
 
 					t := time.Duration(server.Options["ServerAliveInterval"].(float64))

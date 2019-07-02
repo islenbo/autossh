@@ -184,6 +184,7 @@ func scanInput() {
 			utils.Infoln("你选择了", server.Name)
 			err := server.Connect()
 			if err != nil {
+				utils.Logger.Error("server connect error ", err)
 				utils.Errorln(err)
 			}
 		}
