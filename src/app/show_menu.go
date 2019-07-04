@@ -5,6 +5,13 @@ import (
 	"strings"
 )
 
+type Operation struct {
+	Key     string
+	Label   string
+	End     bool
+	Process func(cfg *Config, args []string) error
+}
+
 var menuMap [][]Operation
 
 var operations = make(map[string]Operation)
@@ -17,7 +24,6 @@ func init() {
 			{Key: "remove", Label: "删除", Process: handleRemove},
 		},
 		{
-			{Key: "cp", Label: "文件复制", Process: handleCp},
 			{Key: "exit", Label: "退出", End: true},
 		},
 	}

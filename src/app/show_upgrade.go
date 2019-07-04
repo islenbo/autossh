@@ -1,11 +1,11 @@
-package commands
+package app
 
 import (
 	"archive/zip"
 	"autossh/src/utils"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -21,14 +21,13 @@ import (
 )
 
 type Upgrade struct {
-	Value   bool
 	Version string
 	latest  map[string]interface{}
 }
 
-func (upgrade *Upgrade) Process() bool {
+func showUpgrade() {
+	upgrade := Upgrade{Version: Version}
 	upgrade.exec()
-	return true
 }
 
 func (upgrade *Upgrade) exec() {

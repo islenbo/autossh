@@ -3,7 +3,6 @@ package app
 import (
 	"autossh/src/utils"
 	"errors"
-	"fmt"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
@@ -15,6 +14,24 @@ import (
 	"time"
 )
 
+type Server struct {
+	Name     string                 `json:"name"`
+	Ip       string                 `json:"ip"`
+	Port     int                    `json:"port"`
+	User     string                 `json:"user"`
+	Password string                 `json:"password"`
+	Method   string                 `json:"method"`
+	Key      string                 `json:"key"`
+	Options  map[string]interface{} `json:"options"`
+	Alias    string                 `json:"alias"`
+	Log      ServerLog              `json:"log"`
+
+	termWidth  int
+	termHeight int
+	groupName  string
+}
+
+// 格式化，赋予默认值
 func (server *Server) Format() {
 	if server.Port == 0 {
 		server.Port = 22
@@ -43,56 +60,17 @@ func (server *Server) MergeOptions(options map[string]interface{}, overwrite boo
 	}
 }
 
-func (server *Server) Edit() {
-	input := ""
-	utils.Info("Name(default=" + server.Name + ")：")
-	fmt.Scanln(&input)
-	if input != "" {
-		server.Name = input
-		input = ""
+// 格式化输出，用于打印
+func (server *Server) FormatPrint(flag string, ShowDetail bool) string {
+	alias := ""
+	if server.Alias != "" {
+		alias = "|" + server.Alias
 	}
 
-	utils.Info("Ip(default=" + server.Ip + ")：")
-	fmt.Scanln(&input)
-	if input != "" {
-		server.Ip = input
-		input = ""
-	}
-
-	utils.Info("Port(default=" + strconv.Itoa(server.Port) + ")：")
-	fmt.Scanln(&input)
-	if input != "" {
-		port, _ := strconv.Atoi(input)
-		server.Port = port
-		input = ""
-	}
-
-	utils.Info("User(default=" + server.User + ")：")
-	fmt.Scanln(&input)
-	if input != "" {
-		server.User = input
-		input = ""
-	}
-
-	utils.Info("Password(default=" + server.Password + ")：")
-	fmt.Scanln(&input)
-	if input != "" {
-		server.Password = input
-		input = ""
-	}
-
-	utils.Info("Method(default=" + server.Method + ")：")
-	fmt.Scanln(&input)
-	if input != "" {
-		server.Method = input
-		input = ""
-	}
-
-	utils.Info("Key(default=" + server.Key + ")：")
-	fmt.Scanln(&input)
-	if input != "" {
-		server.Key = input
-		input = ""
+	if ShowDetail {
+		return " [" + flag + alias + "]" + "\t" + server.Name + " [" + server.User + "@" + server.Ip + "]"
+	} else {
+		return " [" + flag + alias + "]" + "\t" + server.Name
 	}
 }
 

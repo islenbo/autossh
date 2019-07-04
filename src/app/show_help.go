@@ -1,19 +1,13 @@
-package commands
+package app
 
 import (
 	"autossh/src/utils"
 	"flag"
 )
 
-type HelpInfo struct {
-	Value bool
-}
-
-func (helInfo *HelpInfo) Process() bool {
+func showHelp() {
 	flag.Usage = usage
 	flag.Usage()
-
-	return true
 }
 
 func usage() {
