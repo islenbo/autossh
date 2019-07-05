@@ -23,9 +23,10 @@ Options:
   -h, -help	显示帮助信息。
 
 Commands:
-  upgrade    		检测升级。
-  ${ServerNum}  	使用编号登录指定服务器。
-  ${ServerAlias} 	使用别名登录指定服务器。
+  upgrade       	    	检测升级。
+  cp [-r] source target 	复制传输。
+  ${ServerNum}          	使用编号登录指定服务器。
+  ${ServerAlias}        	使用别名登录指定服务器。
 `
 	utils.Logln(str)
 }

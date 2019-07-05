@@ -14,6 +14,7 @@ function build() {
     mkdir -p "./releases/${package}"
     CGO_ENABLED=0 GOOS=${os} GOARCH=${arch} go build -o "./releases/${package}/autossh" -ldflags "-X main.Version=${VERSION} -X main.Build=${BUILD}" src/main/main.go
     cp ./config.example.json "./releases/${package}/config.json"
+    chmod +x ./install
     cp ./install "./releases/${package}/install"
     cd ./releases/
     zip -r "./${package}.zip" "./${package}"
