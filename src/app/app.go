@@ -33,6 +33,8 @@ func init() {
 			varUpgrade = true
 		case "cp":
 			varCp = true
+		default:
+			defaultServer = arg
 		}
 	}
 }

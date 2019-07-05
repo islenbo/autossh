@@ -15,7 +15,7 @@ func loadConfig(configFile string) (cfg *Config, err error) {
 	}
 
 	if exists, _ := utils.FileIsExists(configFile); !exists {
-		return cfg, errors.New("Can't read configFile fileL" + configFile)
+		return cfg, errors.New("Can't read configFile file:" + configFile)
 	}
 
 	b, _ := ioutil.ReadFile(configFile)

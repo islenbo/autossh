@@ -5,8 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/pkg/sftp"
 	"io"
-	"log"
 	"os"
 	"path"
 	"strings"
@@ -30,7 +30,7 @@ type Cp struct {
 	isDir bool
 	cfg   *Config
 
-	source *TransferObject
+	source []*TransferObject
 	target *TransferObject
 }
 
@@ -49,10 +49,10 @@ func showCp(configFile string) {
 		return
 	}
 
-	if cp.source.cpType == CpTypeLocal {
+	if cp.source[0].cpType == CpTypeLocal {
 		err = cp.upload()
 	} else {
-		err = cp.download()
+		//err = cp.download()
 	}
 
 	if err != nil {
@@ -82,18 +82,24 @@ func (cp *Cp) parse() error {
 		args = []string{args[0], os.TempDir()}
 	}
 
-	cp.source, err = newTransferObject(*cp.cfg, args[0])
+	length := len(args)
+	cp.target, err = newTransferObject(*cp.cfg, args[length-1])
 	if err != nil {
 		return err
 	}
 
-	cp.target, err = newTransferObject(*cp.cfg, args[1])
-	if err != nil {
-		return err
-	}
+	cp.source = make([]*TransferObject, 0)
+	for _, arg := range args[:length-1] {
+		s, err := newTransferObject(*cp.cfg, arg)
+		if err != nil {
+			return err
+		}
 
-	if cp.source.cpType == CpTypeLocal && cp.source.cpType == cp.target.cpType {
-		return errors.New("源和目标不能同时为本地地址")
+		if s.cpType == CpTypeLocal && s.cpType == cp.target.cpType {
+			return errors.New("源和目标不能同时为本地地址")
+		}
+
+		cp.source = append(cp.source, s)
 	}
 
 	return nil
@@ -101,116 +107,163 @@ func (cp *Cp) parse() error {
 
 // 上传
 func (cp *Cp) upload() error {
-	if exists, err := utils.FileIsExists(cp.source.path); !exists {
-		return err
-	}
-
-	s, _ := os.Stat(cp.source.path)
-	if s.IsDir() && !cp.isDir {
-		return errors.New("源文件是一个目录")
-	}
-	srcFile, err := os.Open(cp.source.path)
-
-	sftpClient, err := cp.target.server.GetSftpClient()
+	client, err := cp.target.server.GetSftpClient()
 	if err != nil {
 		return err
 	}
 
-	defer sftpClient.Close()
+	defer func() {
+		_ = client.Close()
+	}()
 
-	// create destination file
-	filename := path.Base(cp.source.path)
-	dstFile, err := sftpClient.Create(path.Join(cp.target.path, filename))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer dstFile.Close()
-
-	// copy source file to destination file
-	bytes := [4096]byte{}
-	fSize := s.Size()
-	bytesCount := 0
-
-	for {
-		n, err := srcFile.Read(bytes[:])
-		eof := err == io.EOF
-		if err != nil && err != io.EOF {
-			return err
-		}
-
-		bytesCount += n
-		process := float64(bytesCount) / float64(fSize) * 100
-		fmt.Print("\r" + filename + "\t" + fmt.Sprintf("%.2f", process) + "%")
-		_, err = dstFile.Write(bytes[:n])
+	for _, source := range cp.source {
+		file, err := cp.uploadFile(client, source.path)
 		if err != nil {
-			return err
-		}
-
-		if eof {
-			break
+			fmt.Println(file, ": ", err)
 		}
 	}
-	fmt.Print("\r" + filename + "\t" + "100%    \n")
 
 	return nil
 }
 
-// 下载
-func (cp *Cp) download() error {
-	sftpClient, err := cp.source.server.GetSftpClient()
-	if err != nil {
-		return err
+// 上传单个文件
+func (cp *Cp) uploadFile(client *sftp.Client, sourceFile string) (string, error) {
+	if _, err := utils.FileIsExists(sourceFile); err != nil {
+		return sourceFile, err
 	}
 
-	defer sftpClient.Close()
+	s, _ := os.Stat(sourceFile)
+	if s.IsDir() {
+		return sourceFile, errors.New("不是一个有效的文件")
+	}
+
+	srcFile, err := os.Open(sourceFile)
+	if err != nil {
+		return sourceFile, err
+	}
+
+	filename := path.Base(sourceFile)
+	targetPath := cp.target.path
+
+	targetFile, err := client.Stat(targetPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			p := path.Dir(targetPath)
+			if targetFile, err = client.Stat(p); err != nil {
+				return cp.target.path, err
+			}
+
+			filename = path.Base(targetPath)
+			targetPath = p
+		} else {
+			return cp.target.path, err
+		}
+	}
+
+	t := targetPath
+	if targetFile.IsDir() {
+		t = path.Join(t, filename)
+	}
 
 	// create destination file
-	filename := path.Base(cp.source.path)
-	dstFile, err := os.Create(path.Join(cp.target.path, filename))
+	dstFile, err := client.Create(t)
 	if err != nil {
-		return err
-	}
-	defer dstFile.Close()
-
-	// open source file
-	srcFile, err := sftpClient.Open(cp.source.path)
-	if err != nil {
-		log.Fatal(err)
+		return cp.target.path, err
 	}
 
+	defer func() {
+		_ = dstFile.Close()
+	}()
+
+	return cp.showCopy(srcFile, dstFile, s.Size(), sourceFile)
+}
+
+// 显示复制进度
+func (cp *Cp) showCopy(srcFile io.Reader, dstFile io.Writer, fSize int64, sourceFile string) (string, error) {
+	// copy source file to destination file
 	bytes := [4096]byte{}
-	s, err := srcFile.Stat()
-	if err != nil {
-		return err
-	}
-
-	fSize := s.Size()
 	bytesCount := 0
 
 	for {
 		n, err := srcFile.Read(bytes[:])
 		eof := err == io.EOF
 		if err != nil && err != io.EOF {
-			return err
+			return sourceFile, err
 		}
 
 		bytesCount += n
 		process := float64(bytesCount) / float64(fSize) * 100
-		fmt.Print("\r" + filename + "\t" + fmt.Sprintf("%.2f", process) + "%")
+		fmt.Print("\r" + sourceFile + "\t\t" + fmt.Sprintf("%.2f", process) + "%")
 		_, err = dstFile.Write(bytes[:n])
 		if err != nil {
-			return err
+			return cp.target.path, err
 		}
 
 		if eof {
 			break
 		}
 	}
-	fmt.Print("\r" + filename + "\t" + "100%    \n")
 
-	// flush in-memory copy
-	return dstFile.Sync()
+	fmt.Print("\r"+sourceFile+"\t\t"+"100%    ", "\n")
+	return "", nil
 }
+
+// 下载
+//func (cp *Cp) download() error {
+//	sftpClient, err := cp.source.server.GetSftpClient()
+//	if err != nil {
+//		return err
+//	}
+//
+//	defer sftpClient.Close()
+//
+//	// create destination file
+//	filename := path.Base(cp.source.path)
+//	dstFile, err := os.Create(path.Join(cp.target.path, filename))
+//	if err != nil {
+//		return err
+//	}
+//	defer dstFile.Close()
+//
+//	// open source file
+//	srcFile, err := sftpClient.Open(cp.source.path)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//
+//	bytes := [4096]byte{}
+//	s, err := srcFile.Stat()
+//	if err != nil {
+//		return err
+//	}
+//
+//	fSize := s.Size()
+//	bytesCount := 0
+//
+//	for {
+//		n, err := srcFile.Read(bytes[:])
+//		eof := err == io.EOF
+//		if err != nil && err != io.EOF {
+//			return err
+//		}
+//
+//		bytesCount += n
+//		process := float64(bytesCount) / float64(fSize) * 100
+//		fmt.Print("\r" + filename + "\t" + fmt.Sprintf("%.2f", process) + "%")
+//		_, err = dstFile.Write(bytes[:n])
+//		if err != nil {
+//			return err
+//		}
+//
+//		if eof {
+//			break
+//		}
+//	}
+//	fmt.Print("\r" + filename + "\t" + "100%    \n")
+//
+//	// flush in-memory copy
+//	return dstFile.Sync()
+//}
 
 // 创建传输对象
 func newTransferObject(cfg Config, raw string) (*TransferObject, error) {
