@@ -52,7 +52,7 @@ func showCp(configFile string) {
 	if cp.source[0].cpType == CpTypeLocal {
 		err = cp.upload()
 	} else {
-		//err = cp.download()
+		err = cp.download()
 	}
 
 	if err != nil {
@@ -89,7 +89,7 @@ func (cp *Cp) parse() error {
 	}
 
 	cp.source = make([]*TransferObject, 0)
-	for _, arg := range args[:length-1] {
+	for i, arg := range args[:length-1] {
 		s, err := newTransferObject(*cp.cfg, arg)
 		if err != nil {
 			return err
@@ -97,6 +97,10 @@ func (cp *Cp) parse() error {
 
 		if s.cpType == CpTypeLocal && s.cpType == cp.target.cpType {
 			return errors.New("源和目标不能同时为本地地址")
+		}
+
+		if i > 0 && s.cpType != cp.source[i-1].cpType {
+			return errors.New("source 类型不一致")
 		}
 
 		cp.source = append(cp.source, s)
@@ -117,8 +121,7 @@ func (cp *Cp) upload() error {
 	}()
 
 	for _, source := range cp.source {
-		file, err := cp.uploadFile(client, source.path)
-		if err != nil {
+		if file, err := cp.uploadFile(client, source.path); err != nil {
 			fmt.Println(file, ": ", err)
 		}
 	}
@@ -209,61 +212,101 @@ func (cp *Cp) showCopy(srcFile io.Reader, dstFile io.Writer, fSize int64, source
 }
 
 // 下载
-//func (cp *Cp) download() error {
-//	sftpClient, err := cp.source.server.GetSftpClient()
-//	if err != nil {
-//		return err
-//	}
-//
-//	defer sftpClient.Close()
-//
-//	// create destination file
-//	filename := path.Base(cp.source.path)
-//	dstFile, err := os.Create(path.Join(cp.target.path, filename))
-//	if err != nil {
-//		return err
-//	}
-//	defer dstFile.Close()
-//
-//	// open source file
-//	srcFile, err := sftpClient.Open(cp.source.path)
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//
-//	bytes := [4096]byte{}
-//	s, err := srcFile.Stat()
-//	if err != nil {
-//		return err
-//	}
-//
-//	fSize := s.Size()
-//	bytesCount := 0
-//
-//	for {
-//		n, err := srcFile.Read(bytes[:])
-//		eof := err == io.EOF
-//		if err != nil && err != io.EOF {
-//			return err
-//		}
-//
-//		bytesCount += n
-//		process := float64(bytesCount) / float64(fSize) * 100
-//		fmt.Print("\r" + filename + "\t" + fmt.Sprintf("%.2f", process) + "%")
-//		_, err = dstFile.Write(bytes[:n])
-//		if err != nil {
-//			return err
-//		}
-//
-//		if eof {
-//			break
-//		}
-//	}
-//	fmt.Print("\r" + filename + "\t" + "100%    \n")
-//
-//	// flush in-memory copy
-//	return dstFile.Sync()
-//}
+func (cp *Cp) download() error {
+	filename := ""
+	targetPath := cp.target.path
+	targetFile, err := os.Stat(targetPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			p := path.Dir(targetPath)
+			if targetFile, err = os.Stat(p); err != nil {
+				return err
+			}
+
+			filename = path.Base(targetPath)
+			targetPath = p
+		} else {
+			return err
+		}
+	} else {
+		if !targetFile.IsDir() {
+			filename = path.Base(cp.target.path)
+		}
+	}
+
+	target := path.Join(targetPath, filename)
+
+	for _, source := range cp.source {
+		client, err := source.server.GetSftpClient()
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		if file, err := cp.downloadFile(client, source.path, target); err != nil {
+			fmt.Println(file, ": ", err)
+		}
+
+		_ = client.Close()
+	}
+
+	return nil
+}
+
+// 下载单个文件
+func (cp *Cp) downloadFile(client *sftp.Client, src string, dst string) (string, error) {
+	dstStat, err := os.Stat(dst)
+	if err != nil {
+		if os.IsNotExist(err) {
+			if dstFile, err := os.Create(dst); err != nil {
+				return dst, nil
+			} else {
+				dstStat, _ = dstFile.Stat()
+			}
+
+		} else {
+			return dst, err
+		}
+	}
+
+	var dstFile *os.File
+	if dstStat.IsDir() {
+		filename := path.Base(src)
+		dstFile, err = os.Create(path.Join(dst, filename))
+		if err != nil {
+			return dst, err
+		}
+	} else {
+		dstFile, err = os.Create(dst)
+		if err != nil {
+			return dst, err
+		}
+	}
+
+	defer func() {
+		_ = dstFile.Close()
+	}()
+
+	srcFile, err := client.Open(src)
+	if err != nil {
+		return src, err
+	}
+
+	s, err := srcFile.Stat()
+	if err != nil {
+		return src, err
+	}
+
+	if s.IsDir() {
+		return src, errors.New("不是一个有效的文件")
+	}
+
+	defer func() {
+		_ = dstFile.Sync()
+	}()
+
+	return cp.showCopy(srcFile, dstFile, s.Size(), src)
+
+}
 
 // 创建传输对象
 func newTransferObject(cfg Config, raw string) (*TransferObject, error) {
