@@ -211,6 +211,7 @@ func (cp *Cp) uploadFile(client *sftp.Client, srcFile *os.File, remoteFile strin
 func (cp *Cp) showCopy(srcFile FileLike, dstFile io.Writer, fSize int64) (string, error) {
 	bytes := [4096]byte{}
 	bytesCount := 0
+	filename := path.Base(srcFile.Name())
 
 	for {
 		n, err := srcFile.Read(bytes[:])
@@ -221,18 +222,19 @@ func (cp *Cp) showCopy(srcFile FileLike, dstFile io.Writer, fSize int64) (string
 
 		bytesCount += n
 		process := float64(bytesCount) / float64(fSize) * 100
-		fmt.Print("\r" + srcFile.Name() + "\t\t" + fmt.Sprintf("%.2f", process) + "%")
+		cp.printProcess(filename, process)
 		_, err = dstFile.Write(bytes[:n])
 		if err != nil {
 			return cp.target.path, err
 		}
 
 		if eof {
+			cp.printProcess(filename, 100.0)
 			break
 		}
 	}
 
-	fmt.Print("\r"+srcFile.Name()+"\t\t"+"100%    ", "\n")
+	fmt.Println("")
 	return "", nil
 }
 
@@ -366,6 +368,11 @@ func (cp *Cp) parseRemoteFilename(client *sftp.Client, localFile string, remoteF
 	}
 
 	return remoteFile, nil
+}
+
+func (cp *Cp) printProcess(name string, process float64) {
+	// TODO 文件大小，执行时间
+	fmt.Print("\r" + name + "\t\t\t" + fmt.Sprintf("%.2f", process) + "%")
 }
 
 // 创建传输对象
