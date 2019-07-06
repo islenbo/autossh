@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PROJECT="autossh"
-VERSION="v1.0.0"
+VERSION="v1.1.0"
 BUILD=`date +%FT%T%z`
 
 function build() {
@@ -12,8 +12,10 @@ function build() {
 
     echo "build ${package} ..."
     mkdir -p "./releases/${package}"
-    CGO_ENABLED=0 GOOS=${os} GOARCH=${arch} go build -o "./releases/${package}/autossh" -ldflags "-X main.Version=${VERSION} -X main.Build=${BUILD}" main.go
+    CGO_ENABLED=0 GOOS=${os} GOARCH=${arch} go build -o "./releases/${package}/autossh" -ldflags "-X main.Version=${VERSION} -X main.Build=${BUILD}" src/main/main.go
     cp ./config.example.json "./releases/${package}/config.json"
+    chmod +x ./install
+    cp ./install "./releases/${package}/install"
     cd ./releases/
     zip -r "./${package}.zip" "./${package}"
     echo "clean ${package}"

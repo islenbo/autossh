@@ -1,48 +1,15 @@
-package core
+package utils
 
 import (
-	"runtime"
-	"os"
 	"bytes"
-	"os/exec"
-	"strings"
-	"os/user"
 	"errors"
+	"os"
+	"os/exec"
+	"os/user"
 	"path/filepath"
-	"unicode"
+	"runtime"
+	"strings"
 )
-
-// 错误断言
-func ErrorAssert(err error, assert string) bool {
-	return strings.Contains(err.Error(), assert)
-}
-
-// 清屏
-func Clear() {
-	var cmd exec.Cmd
-	if "windows" == runtime.GOOS {
-		cmd = *exec.Command("cmd", "/c", "cls")
-	} else {
-		cmd = *exec.Command("clear")
-	}
-
-	cmd.Stdout = os.Stdout
-	cmd.Run()
-}
-
-// 计算字符宽度（中文）
-func ZhLen(str string) float64 {
-	length := 0.0
-	for _, c := range str {
-		if unicode.Is(unicode.Scripts["Han"], c) {
-			length += 2
-		} else {
-			length += 1
-		}
-	}
-
-	return length
-}
 
 // 解析路径
 func ParsePath(path string) (string, error) {
@@ -56,11 +23,11 @@ func ParsePath(path string) (string, error) {
 		}
 
 		return home + string(str[1:]), nil
-	} else if firstKey == "." {
+	} else if firstKey == "/" {
+		return path, nil
+	} else {
 		p, _ := filepath.Abs(filepath.Dir(os.Args[0]))
 		return p + "/" + path, nil
-	} else {
-		return path, nil
 	}
 }
 
@@ -114,4 +81,24 @@ func homeWindows() (string, error) {
 	}
 
 	return home, nil
+}
+
+// 判断文件是否存在
+func FileIsExists(file string) (bool, error) {
+	file, err := ParsePath(file)
+	if err != nil {
+		return false, err
+	}
+
+	_, err = os.Stat(file)
+	if err != nil {
+		return false, err
+		//if os.IsNotExist(err) {
+		//	return false, err
+		//} else {
+		//	// unknown error
+		//}
+	}
+
+	return true, nil
 }

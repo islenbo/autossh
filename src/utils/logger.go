@@ -1,8 +1,8 @@
-package core
+package utils
 
 import (
-	"os"
 	"log"
+	"os"
 )
 
 type logger struct {
@@ -11,11 +11,11 @@ type logger struct {
 	level    string
 }
 
-var Log logger
+var Logger logger
 
 func init() {
 	logFile, _ := ParsePath("./app.log")
-	Log = logger{
+	Logger = logger{
 		File: logFile,
 	}
 }

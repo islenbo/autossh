@@ -1,0 +1,16 @@
+github.com/islenbo/scp v0.0.0-20170824162307-f7b48647feef3e30991f2ecc16b2b9a977d9a7c3 h1:GZQQKQUN0Bp02sJNGN6/FoqXeKRVqftdsv6WFhwhcR4=
+github.com/islenbo/scp v0.0.0-20170824162307-f7b48647feef3e30991f2ecc16b2b9a977d9a7c3/go.mod h1:h2o9ndCCKJY6lGA8rN7Da+3RVv2h5d36KKTyLGuS/T8=
+github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 h1:Z9n2FFNUXsshfwJMBgNA0RU6/i7WVaAegv3PtuIHPMs=
+github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51/go.mod h1:CzGEWj7cYgsdH8dAjBGEr58BoE7ScuLd+fwFZ44+/x8=
+github.com/kr/fs v0.1.0 h1:Jskdu9ieNAYnjxsi0LbQp1ulIKZV1LAFgK1tWhpZgl8=
+github.com/kr/fs v0.1.0/go.mod h1:FFnZGqtBN9Gxj7eW1uZ42v5BccTP0vu6NEaFoC2HwRg=
+github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
+github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
+github.com/pkg/sftp v1.10.0 h1:DGA1KlA9esU6WcicH+P8PxFZOl15O6GYtab1cIJdOlE=
+github.com/pkg/sftp v1.10.0/go.mod h1:NxmoDg/QLVWluQDUYG7XBZTLUpKeFa8e3aMf1BfjyHk=
+github.com/tmc/scp v0.0.0-20170824174625-f7b48647feef h1:7D6Nm4D6f0ci9yttWaKjM1TMAXrH5Su72dojqYGntFY=
+github.com/tmc/scp v0.0.0-20170824174625-f7b48647feef/go.mod h1:WLFStEdnJXpjK8kd4qKLwQKX/1vrDzp5BcDyiZJBHJM=
+golang.org/x/crypto v0.0.0-20181024132630-e84da0312774c21d64ee2317962ef669b27ffb41 h1:IlSGaL0SqFiWKa+4DitAJUo/USS7vA2+5VhRfkkF048=
+golang.org/x/crypto v0.0.0-20181024132630-e84da0312774c21d64ee2317962ef669b27ffb41/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
+golang.org/x/sys v0.0.0-20190509141414-a5b02f93d862 h1:rM0ROo5vb9AdYJi1110yjWGMej9ITfKddS89P3Fkhug=
+golang.org/x/sys v0.0.0-20190509141414-a5b02f93d862/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
