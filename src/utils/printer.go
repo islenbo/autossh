@@ -39,26 +39,26 @@ func Errorln(a ...interface{}) {
 }
 
 // 二维数组对齐
-func Align(arr [][]string) [][]string {
-	for column := 0; column < 2; column++ {
-		columnWidth := getColumnWidth(arr, column)
-
-		for index := range arr {
-			arr[index][column] = AppendRight(arr[index][column], " ", columnWidth)
-		}
-	}
-
-	return arr
-}
-
-func getColumnWidth(arr [][]string, column int) int {
-	maxWidth := 0
-	for _, row := range arr {
-		width := int(ZhLen(row[column]))
-		if maxWidth < width {
-			maxWidth = width
-		}
-	}
-
-	return maxWidth
-}
+//func Align(arr [][]string) [][]string {
+//	for column := 0; column < 2; column++ {
+//		columnWidth := getColumnWidth(arr, column)
+//
+//		for index := range arr {
+//			arr[index][column] = AppendRight(arr[index][column], " ", columnWidth)
+//		}
+//	}
+//
+//	return arr
+//}
+//
+//func getColumnWidth(arr [][]string, column int) int {
+//	maxWidth := 0
+//	for _, row := range arr {
+//		width := int(ZhLen(row[column]))
+//		if maxWidth < width {
+//			maxWidth = width
+//		}
+//	}
+//
+//	return maxWidth
+//}

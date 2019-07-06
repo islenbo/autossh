@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/pkg/sftp"
 	"io"
+	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -20,18 +21,25 @@ const (
 )
 
 type TransferObject struct {
-	raw    string
+	raw    string // 原始数据，如 vagrant:/root/example.txt
 	cpType CpType
 	server Server
-	path   string
+	path   string // 从raw解析得到的文件路径，如 /root/example.txt
 }
 
 type Cp struct {
 	isDir bool
 	cfg   *Config
 
-	source []*TransferObject
-	target *TransferObject
+	sources []*TransferObject
+	target  *TransferObject
+}
+
+type FileLike interface {
+	Name() string
+	Stat() (os.FileInfo, error)
+	Read([]byte) (int, error)
+	Close() error
 }
 
 // 复制
@@ -49,7 +57,7 @@ func showCp(configFile string) {
 		return
 	}
 
-	if cp.source[0].cpType == CpTypeLocal {
+	if cp.sources[0].cpType == CpTypeLocal {
 		err = cp.upload()
 	} else {
 		err = cp.download()
@@ -88,7 +96,7 @@ func (cp *Cp) parse() error {
 		return err
 	}
 
-	cp.source = make([]*TransferObject, 0)
+	cp.sources = make([]*TransferObject, 0)
 	for i, arg := range args[:length-1] {
 		s, err := newTransferObject(*cp.cfg, arg)
 		if err != nil {
@@ -99,11 +107,11 @@ func (cp *Cp) parse() error {
 			return errors.New("源和目标不能同时为本地地址")
 		}
 
-		if i > 0 && s.cpType != cp.source[i-1].cpType {
+		if i > 0 && s.cpType != cp.sources[i-1].cpType {
 			return errors.New("source 类型不一致")
 		}
 
-		cp.source = append(cp.source, s)
+		cp.sources = append(cp.sources, s)
 	}
 
 	return nil
@@ -111,17 +119,66 @@ func (cp *Cp) parse() error {
 
 // 上传
 func (cp *Cp) upload() error {
-	client, err := cp.target.server.GetSftpClient()
+	sftpClient, err := cp.target.server.GetSftpClient()
 	if err != nil {
 		return err
 	}
 
 	defer func() {
-		_ = client.Close()
+		_ = sftpClient.Close()
 	}()
 
-	for _, source := range cp.source {
-		if file, err := cp.uploadFile(client, source.path); err != nil {
+	var funcUpload func(client *sftp.Client, src string, dst string, vPath string) (string, error)
+	funcUpload = func(client *sftp.Client, src string, dst string, vPath string) (string, error) {
+		srcFile, err := os.Open(src)
+		if err != nil {
+			return src, err
+		}
+
+		defer func() {
+			_ = srcFile.Close()
+		}()
+
+		srcFileInfo, err := srcFile.Stat()
+		if err != nil {
+			return srcFile.Name(), err
+		}
+
+		if srcFileInfo.IsDir() {
+			if !cp.isDir {
+				return src, errors.New("是一个目录")
+			}
+
+			childFiles, err := ioutil.ReadDir(srcFile.Name())
+			if err != nil {
+				return srcFile.Name(), err
+			}
+
+			if vPath == "" {
+				vPath = "/"
+			} else {
+				vPath = path.Join(vPath, srcFileInfo.Name())
+			}
+
+			for _, childFile := range childFiles {
+				childFilename := path.Join(src, childFile.Name())
+				if str, err := funcUpload(client, childFilename, dst, vPath); err != nil {
+					fmt.Println(str, ": ", err)
+				}
+			}
+		} else {
+			newDst := path.Join(dst, vPath)
+
+			if file, err := cp.uploadFile(client, srcFile, newDst, srcFileInfo.Size()); err != nil {
+				return file, err
+			}
+		}
+
+		return "", nil
+	}
+
+	for _, source := range cp.sources {
+		if file, err := funcUpload(sftpClient, source.path, cp.target.path, ""); err != nil {
 			fmt.Println(file, ": ", err)
 		}
 	}
@@ -129,61 +186,29 @@ func (cp *Cp) upload() error {
 	return nil
 }
 
-// 上传单个文件
-func (cp *Cp) uploadFile(client *sftp.Client, sourceFile string) (string, error) {
-	if _, err := utils.FileIsExists(sourceFile); err != nil {
-		return sourceFile, err
-	}
+// 上传文件
+func (cp *Cp) uploadFile(client *sftp.Client, srcFile *os.File, remoteFile string, fSize int64) (string, error) {
+	var err error
 
-	s, _ := os.Stat(sourceFile)
-	if s.IsDir() {
-		return sourceFile, errors.New("不是一个有效的文件")
-	}
-
-	srcFile, err := os.Open(sourceFile)
+	remoteFile, err = cp.parseRemoteFilename(client, srcFile.Name(), remoteFile)
 	if err != nil {
-		return sourceFile, err
+		return remoteFile, err
 	}
 
-	filename := path.Base(sourceFile)
-	targetPath := cp.target.path
-
-	targetFile, err := client.Stat(targetPath)
+	dstFile, err := client.Create(remoteFile)
 	if err != nil {
-		if os.IsNotExist(err) {
-			p := path.Dir(targetPath)
-			if targetFile, err = client.Stat(p); err != nil {
-				return cp.target.path, err
-			}
-
-			filename = path.Base(targetPath)
-			targetPath = p
-		} else {
-			return cp.target.path, err
-		}
-	}
-
-	t := targetPath
-	if targetFile.IsDir() {
-		t = path.Join(t, filename)
-	}
-
-	// create destination file
-	dstFile, err := client.Create(t)
-	if err != nil {
-		return cp.target.path, err
+		return remoteFile, err
 	}
 
 	defer func() {
 		_ = dstFile.Close()
 	}()
 
-	return cp.showCopy(srcFile, dstFile, s.Size(), sourceFile)
+	return cp.showCopy(srcFile, dstFile, fSize)
 }
 
 // 显示复制进度
-func (cp *Cp) showCopy(srcFile io.Reader, dstFile io.Writer, fSize int64, sourceFile string) (string, error) {
-	// copy source file to destination file
+func (cp *Cp) showCopy(srcFile FileLike, dstFile io.Writer, fSize int64) (string, error) {
 	bytes := [4096]byte{}
 	bytesCount := 0
 
@@ -191,12 +216,12 @@ func (cp *Cp) showCopy(srcFile io.Reader, dstFile io.Writer, fSize int64, source
 		n, err := srcFile.Read(bytes[:])
 		eof := err == io.EOF
 		if err != nil && err != io.EOF {
-			return sourceFile, err
+			return srcFile.Name(), err
 		}
 
 		bytesCount += n
 		process := float64(bytesCount) / float64(fSize) * 100
-		fmt.Print("\r" + sourceFile + "\t\t" + fmt.Sprintf("%.2f", process) + "%")
+		fmt.Print("\r" + srcFile.Name() + "\t\t" + fmt.Sprintf("%.2f", process) + "%")
 		_, err = dstFile.Write(bytes[:n])
 		if err != nil {
 			return cp.target.path, err
@@ -207,7 +232,7 @@ func (cp *Cp) showCopy(srcFile io.Reader, dstFile io.Writer, fSize int64, source
 		}
 	}
 
-	fmt.Print("\r"+sourceFile+"\t\t"+"100%    ", "\n")
+	fmt.Print("\r"+srcFile.Name()+"\t\t"+"100%    ", "\n")
 	return "", nil
 }
 
@@ -236,7 +261,7 @@ func (cp *Cp) download() error {
 
 	target := path.Join(targetPath, filename)
 
-	for _, source := range cp.source {
+	for _, source := range cp.sources {
 		client, err := source.server.GetSftpClient()
 		if err != nil {
 			fmt.Println(err)
@@ -304,8 +329,43 @@ func (cp *Cp) downloadFile(client *sftp.Client, src string, dst string) (string,
 		_ = dstFile.Sync()
 	}()
 
-	return cp.showCopy(srcFile, dstFile, s.Size(), src)
+	return cp.showCopy(srcFile, dstFile, s.Size())
 
+}
+
+// 解析远程文件名
+// localFile = /root/example.txt remoteFile = /root/ => /root/example.txt
+// localFile = /root/example.txt remoteFile = /root => /root/example.txt
+// localFile = /root/example.txt remoteFile = /root/new-name.txt => /root/new-name.txt
+func (cp *Cp) parseRemoteFilename(client *sftp.Client, localFile string, remoteFile string) (string, error) {
+	dstFileInfo, err := client.Stat(remoteFile)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return remoteFile, err
+		}
+
+		if cp.isDir {
+			if err := client.Mkdir(remoteFile); err != nil {
+				return remoteFile, err
+			}
+
+			remoteFile = path.Join(remoteFile, path.Base(localFile))
+		} else {
+			var p = path.Dir(remoteFile)
+			if _, err = client.Stat(p); err != nil {
+				return remoteFile, err
+			}
+
+			remoteFile = path.Join(path.Dir(remoteFile), path.Base(remoteFile))
+		}
+
+	} else {
+		if dstFileInfo.IsDir() {
+			remoteFile = path.Join(remoteFile, path.Base(localFile))
+		}
+	}
+
+	return remoteFile, nil
 }
 
 // 创建传输对象
