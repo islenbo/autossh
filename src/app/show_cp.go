@@ -10,7 +10,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strconv"
 	"strings"
+	"syscall"
+	"time"
+	"unsafe"
 )
 
 type TransferObjectType int
@@ -160,10 +164,23 @@ func (cp *Cp) ioCopy(client *IOClient, srcFile FileLike, dst string, fSize int64
 		_ = dstFile.Close()
 	}()
 
-	bytes := [4096]byte{}
 	bytesCount := 0
 	filename := path.Base(srcFile.Name())
+	startTime := time.Now()
+	speed := 0.0
+	var process = 0.0
 
+	go func() {
+		for {
+			cp.printProcess(filename, process, startTime, speed)
+			time.Sleep(time.Second)
+			if process >= 100 {
+				break
+			}
+		}
+	}()
+
+	bytes := make([]byte, 64*1024)
 	for {
 		n, err := srcFile.Read(bytes[:])
 		eof := err == io.EOF
@@ -171,16 +188,16 @@ func (cp *Cp) ioCopy(client *IOClient, srcFile FileLike, dst string, fSize int64
 			return srcFile.Name(), err
 		}
 
-		bytesCount += n
-		process := float64(bytesCount) / float64(fSize) * 100
-		cp.printProcess(filename, process)
-		_, err = dstFile.Write(bytes[:n])
+		wn, err := dstFile.Write(bytes[:n])
 		if err != nil {
 			return cp.target.path, err
 		}
+		bytesCount += wn
+		process = float64(bytesCount) / float64(fSize) * 100
+		speed = float64(bytesCount) / time.Now().Sub(startTime).Seconds()
 
 		if eof {
-			cp.printProcess(filename, 100.0)
+			cp.printProcess(filename, 100.0, startTime, speed)
 			break
 		}
 	}
@@ -298,9 +315,36 @@ func (cp *Cp) parseDstFilename(client *IOClient, src string, dst string) (string
 	return dst, nil
 }
 
-func (cp *Cp) printProcess(name string, process float64) {
-	// TODO 文件大小，执行时间
-	fmt.Print("\r" + name + "\t\t\t" + fmt.Sprintf("%.2f", process) + "%")
+func (cp *Cp) printProcess(name string, process float64, startTime time.Time, speed float64) {
+	// TODO 文件大小
+	execTime := time.Now().Sub(startTime)
+
+	type winSize struct {
+		Row    uint16
+		Col    uint16
+		Xpixel uint16
+		Ypixel uint16
+	}
+	ws := &winSize{}
+	retCode, _, _ := syscall.Syscall(syscall.SYS_IOCTL,
+		uintptr(syscall.Stdin),
+		uintptr(syscall.TIOCGWINSZ),
+		uintptr(unsafe.Pointer(ws)))
+
+	padding := 0
+	if int(retCode) != -1 {
+		padding = int(ws.Col) - utils.ZhLen(name) - 40
+	}
+
+	extInfo := fmt.Sprintf("%.2f%%  %10s/s  %02.0f:%02.0f:%02.0f",
+		process,
+		utils.SizeFormat(speed),
+		execTime.Hours(),
+		execTime.Minutes(),
+		execTime.Seconds())
+
+	format := "\r%s%-" + strconv.Itoa(padding) + "s%40s"
+	fmt.Printf(format, name, "", extInfo)
 }
 
 func (cp *Cp) printFileError(name string, err error) {

@@ -1,10 +1,12 @@
 package utils
 
-import "unicode"
+import (
+	"unicode"
+)
 
 // 计算字符宽度（中文）
-func ZhLen(str string) float64 {
-	length := 0.0
+func ZhLen(str string) int {
+	length := 0
 	for _, c := range str {
 		if unicode.Is(unicode.Scripts["Han"], c) {
 			length += 2
@@ -21,8 +23,8 @@ func ZhLen(str string) float64 {
 // c 填充符号
 // maxlength 总长度
 // 如： title = 测试 c=* maxlength = 10 返回 ** 返回 **
-func FormatSeparator(title string, c string, maxlength float64) string {
-	charslen := int((maxlength - ZhLen(title)) / 2)
+func FormatSeparator(title string, c string, maxlength int) string {
+	charslen := (maxlength - ZhLen(title)) / 2
 	chars := ""
 	for i := 0; i < charslen; i++ {
 		chars += c
@@ -32,15 +34,15 @@ func FormatSeparator(title string, c string, maxlength float64) string {
 }
 
 // 右填充
-func AppendRight(body string, char string, maxlength int) string {
-	length := int(ZhLen(body))
-	if length >= maxlength {
-		return body
-	}
-
-	for i := 0; i < maxlength-length; i++ {
-		body = body + char
-	}
-
-	return body
-}
+//func AppendRight(body string, char string, maxlength int) string {
+//	length := ZhLen(body)
+//	if length >= maxlength {
+//		return body
+//	}
+//
+//	for i := 0; i < maxlength-length; i++ {
+//		body = body + char
+//	}
+//
+//	return body
+//}

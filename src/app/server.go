@@ -9,8 +9,10 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -138,13 +140,15 @@ func (server *Server) Connect() error {
 	if err != nil {
 		return errors.New("创建文件描述符出错:" + err.Error())
 	}
+	defer terminal.Restore(fd, oldState)
 
 	stopKeepAliveLoop := server.startKeepAliveLoop(session)
 	defer close(stopKeepAliveLoop)
 
-	server.stdIO(session)
-
-	defer terminal.Restore(fd, oldState)
+	err = server.stdIO(session)
+	if err != nil {
+		return err
+	}
 
 	modes := ssh.TerminalModes{
 		ssh.ECHO:          1,
@@ -153,12 +157,15 @@ func (server *Server) Connect() error {
 	}
 
 	server.termWidth, server.termHeight, _ = terminal.GetSize(fd)
-	if err := session.RequestPty("xterm-256color", server.termHeight, server.termWidth, modes); err != nil {
+	termType := os.Getenv("TERM")
+	if termType == "" {
+		termType = "xterm-256color"
+	}
+	if err := session.RequestPty(termType, server.termHeight, server.termWidth, modes); err != nil {
 		return errors.New("创建终端出错:" + err.Error())
 	}
 
-	winChange := server.listenWindowChange(session, fd)
-	defer close(winChange)
+	server.listenWindowChange(session, fd)
 
 	err = session.Shell()
 	if err != nil {
@@ -174,12 +181,15 @@ func (server *Server) Connect() error {
 }
 
 // 重定向标准输入输出
-func (server *Server) stdIO(session *ssh.Session) {
+func (server *Server) stdIO(session *ssh.Session) error {
 	session.Stderr = os.Stderr
 	session.Stdin = os.Stdin
 
 	if server.Log.Enable {
-		ch, _ := session.StdoutPipe()
+		ch, err := session.StdoutPipe()
+		if err != nil {
+			return err
+		}
 
 		go func() {
 			flag := os.O_RDWR | os.O_CREATE
@@ -189,7 +199,11 @@ func (server *Server) stdIO(session *ssh.Session) {
 			case LogModeCover:
 			}
 
-			f, _ := os.OpenFile(server.formatLogFilename(server.Log.Filename), flag, 0644)
+			f, err := os.OpenFile(server.formatLogFilename(server.Log.Filename), flag, 0644)
+			if err != nil {
+				utils.Logger.Error("Open file fail ", err)
+				return
+			}
 
 			for {
 				buff := [4096]byte{}
@@ -208,6 +222,8 @@ func (server *Server) stdIO(session *ssh.Session) {
 	} else {
 		session.Stdout = os.Stdout
 	}
+
+	return nil
 }
 
 // 格式化日志文件名
@@ -215,8 +231,8 @@ func (server *Server) formatLogFilename(filename string) string {
 	kvs := map[string]string{
 		"%g":  server.groupName,
 		"%n":  server.Name,
-		"%dt": time.Now().Format("2006-01-02-15-04-05"),
-		"%d":  time.Now().Format("2006-01-02"),
+		"%dt": time.Now().Format("20060102-150405"),
+		"%d":  time.Now().Format("20060102"),
 		"%u":  server.User,
 		"%a":  server.Alias,
 	}
@@ -306,26 +322,40 @@ func (server *Server) startKeepAliveLoop(session *ssh.Session) chan struct{} {
 }
 
 // 监听终端窗口变化
-func (server *Server) listenWindowChange(session *ssh.Session, fd int) chan struct{} {
-	terminate := make(chan struct{})
+func (server *Server) listenWindowChange(session *ssh.Session, fd int) {
 	go func() {
+		sigwinchCh := make(chan os.Signal, 1)
+		defer close(sigwinchCh)
+
+		signal.Notify(sigwinchCh, syscall.SIGWINCH)
+		termWidth, termHeight, err := terminal.GetSize(fd)
+		if err != nil {
+			utils.Logger.Error(err)
+		}
+
 		for {
 			select {
-			case <-terminate:
-				return
-			default:
-				termWidth, termHeight, _ := terminal.GetSize(fd)
+			// 阻塞读取
+			case sigwinch := <-sigwinchCh:
+				if sigwinch == nil {
+					return
+				}
+				currTermWidth, currTermHeight, err := terminal.GetSize(fd)
 
-				if server.termWidth != termWidth || server.termHeight != termHeight {
-					server.termHeight = termHeight
-					server.termWidth = termWidth
-					session.WindowChange(termHeight, termWidth)
+				// 判断一下窗口尺寸是否有改变
+				if currTermHeight == termHeight && currTermWidth == termWidth {
+					continue
 				}
 
-				time.Sleep(time.Millisecond * 3)
+				// 更新远端大小
+				session.WindowChange(currTermHeight, currTermWidth)
+				if err != nil {
+					utils.Logger.Error(err)
+					continue
+				}
+
+				termWidth, termHeight = currTermWidth, currTermHeight
 			}
 		}
 	}()
-
-	return terminate
 }

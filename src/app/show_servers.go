@@ -19,7 +19,6 @@ func showServers(configFile string) {
 
 	for {
 		loop, clear, reload := scanInput(cfg)
-		// TODO 解决进入服务器之后第一次输入无效的问题（进入新增、编辑、删除没问题）
 		if !loop {
 			break
 		}
@@ -73,8 +72,8 @@ func show(cfg *Config) {
 }
 
 // 计算分隔符长度
-func separatorLength(cfg Config) float64 {
-	maxlength := 60.0
+func separatorLength(cfg Config) int {
+	maxlength := 60
 	for _, group := range cfg.Groups {
 		length := utils.ZhLen(group.GroupName)
 		if length > maxlength {
