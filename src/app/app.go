@@ -1,7 +1,6 @@
 package app
 
 import (
-	"autossh/src/utils"
 	"flag"
 )
 
@@ -9,30 +8,33 @@ var (
 	Version string
 	Build   string
 
-	varVersion bool
-	varHelp    bool
-	varUpgrade bool
-	varCp      bool
-	varConfig  = "./config.json"
+	c       = "./config.json"
+	v       bool
+	h       bool
+	upgrade bool
+	cp      bool
 )
 
 func init() {
-	flag.BoolVar(&varVersion, "v", varVersion, "版本信息")
-	flag.BoolVar(&varVersion, "version", varVersion, "版本信息")
-	flag.BoolVar(&varHelp, "h", varHelp, "帮助信息")
-	flag.BoolVar(&varHelp, "help", varHelp, "帮助信息")
-	flag.StringVar(&varConfig, "c", varConfig, "指定配置文件路径")
-	flag.StringVar(&varConfig, "config", varConfig, "指定配置文件路径")
+	flag.StringVar(&c, "c", c, "指定配置文件路径")
+	flag.StringVar(&c, "config", c, "指定配置文件路径")
 
+	flag.BoolVar(&v, "v", v, "版本信息")
+	flag.BoolVar(&v, "version", v, "版本信息")
+
+	flag.BoolVar(&h, "h", h, "帮助信息")
+	flag.BoolVar(&h, "help", h, "帮助信息")
+
+	flag.Usage = usage
 	flag.Parse()
 
 	if len(flag.Args()) > 0 {
 		arg := flag.Arg(0)
 		switch arg {
 		case "upgrade":
-			varUpgrade = true
+			upgrade = true
 		case "cp":
-			varCp = true
+			cp = true
 		default:
 			defaultServer = arg
 		}
@@ -40,20 +42,15 @@ func init() {
 }
 
 func Run() {
-	if exists, _ := utils.FileIsExists(varConfig); !exists {
-		utils.Errorln("Can't read config file", varConfig)
-		return
-	}
-
-	if varVersion {
+	if v {
 		showVersion()
-	} else if varHelp {
+	} else if h {
 		showHelp()
-	} else if varUpgrade {
+	} else if upgrade {
 		showUpgrade()
-	} else if varCp {
-		showCp(varConfig)
+	} else if cp {
+		showCp(c)
 	} else {
-		showServers(varConfig)
+		showServers(c)
 	}
 }
