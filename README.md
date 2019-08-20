@@ -83,3 +83,6 @@ sh build.sh
 
 ## 注意
 v0.X版本配置文件无法与v1.X版本兼容，请勿使用！
+
+## License
+MIT
