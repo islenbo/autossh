@@ -1,7 +1,6 @@
 #!/bin/bash
 
 export GO111MODULE="on"
-export GOFLAGS=" -mod=vendor"
 go mod tidy
 
 PROJECT="autossh"
