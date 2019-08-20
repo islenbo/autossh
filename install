@@ -7,13 +7,12 @@ cp -f ./autossh ~/autossh/
 
 CONFIG_FILE=`cd ~/autossh/ && pwd`/config.json
 if [[ ! -f ${CONFIG_FILE} ]]; then
-    echo "not exists"
     cp ./config.json ~/autossh/
 fi
 
 HAS_ALIAS=`cat ~/.bash_profile | grep autossh | wc -l`
 if [[ ${HAS_ALIAS} -eq 0 ]]; then
-    echo "alias autossh='~/autossh/autossh'" >> ~/.bash_profile
+    echo "export PATH=$PATH:~/autossh/" >> ~/.bash_profile
 fi
 
 source ~/.bash_profile

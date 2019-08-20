@@ -2,13 +2,15 @@ package app
 
 import (
 	"flag"
+	"os"
+	"path/filepath"
 )
 
 var (
 	Version string
 	Build   string
 
-	c       = "./config.json"
+	c       string
 	v       bool
 	h       bool
 	upgrade bool
@@ -16,6 +18,10 @@ var (
 )
 
 func init() {
+	// 取执行文件所在目录下的config.json
+	dir, _ := os.Executable()
+	c = filepath.Dir(dir) + "/config.json"
+
 	flag.StringVar(&c, "c", c, "指定配置文件路径")
 	flag.StringVar(&c, "config", c, "指定配置文件路径")
 

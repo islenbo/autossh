@@ -13,6 +13,7 @@
 - 删除功能支持ctrl+d退出
 - 优化帮助菜单显示
 - 修复若干Bug
+- 支持SOCKS5代理
 
 ## 下载
 [https://github.com/islenbo/autossh/releases](https://github.com/islenbo/autossh/releases)
