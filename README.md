@@ -67,12 +67,10 @@ groups:
 
 ## Q&amp;A
 
-##### Q: Downloads中为什么没有Windows的包？
+### Q: Downloads中为什么没有Windows的包？
 A: Windows下有很多ssh工具，autossh主要是面向Mac/Linux群体。
 
-----
-
-##### Q: cp 命令出现报错: ssh: subsystem request failed
+### Q: cp 命令出现报错: ssh: subsystem request failed
 A: 修改服务器 /etc/ssh/sshd_config 将 `Subsystem       sftp    /usr/libexec/openssh/sftp-server` 的注释打开，重启 sshd 服务。
 
 ## 编译
