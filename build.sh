@@ -1,5 +1,9 @@
 #!/bin/bash
 
+export GO111MODULE="on"
+export GOFLAGS=" -mod=vendor"
+go mod tidy
+
 PROJECT="autossh"
 VERSION="v1.1.0"
 BUILD=`date +%FT%T%z`

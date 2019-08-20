@@ -36,10 +36,7 @@
 
 ## 编译
 ```bash
-export GO111MODULE="on"
-export GOFLAGS=" -mod=vendor"
-go mod tidy
-go build main.go
+sh build.sh
 ```
 
 ## 依赖
