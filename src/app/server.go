@@ -3,9 +3,11 @@ package app
 import (
 	"autossh/src/utils"
 	"errors"
+	"fmt"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/net/proxy"
 	"io/ioutil"
 	"net"
 	"os"
@@ -31,6 +33,7 @@ type Server struct {
 	termWidth  int
 	termHeight int
 	groupName  string
+	group      *Group
 }
 
 // 格式化，赋予默认值
@@ -98,12 +101,44 @@ func (server *Server) GetSshClient() (*ssh.Client, error) {
 
 	addr := server.Ip + ":" + strconv.Itoa(server.Port)
 
-	client, err := ssh.Dial("tcp", addr, config)
+	if server.group != nil && server.group.Proxy != nil {
+		return server.proxySshClient(server.group.Proxy, addr, config)
+	} else {
+		return ssh.Dial("tcp", addr, config)
+	}
+}
+
+func (server *Server) proxySshClient(p *Proxy, sshServerAddr string, sshConfig *ssh.ClientConfig) (client *ssh.Client, err error) {
+	var dialer proxy.Dialer
+	switch p.Type {
+	case ProxyTypeSocks5:
+		var auth proxy.Auth
+		if p.User != "" {
+			auth = proxy.Auth{
+				User:     p.User,
+				Password: p.Password,
+			}
+		}
+
+		dialer, err = proxy.SOCKS5("tcp", p.Server+":"+strconv.Itoa(p.Port), &auth, proxy.Direct)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, errors.New(fmt.Sprintf("unknown proxy type: %s", p.Type))
+	}
+
+	conn, err := dialer.Dial("tcp", sshServerAddr)
 	if err != nil {
 		return nil, err
 	}
 
-	return client, nil
+	c, chans, reqs, err := ssh.NewClientConn(conn, sshServerAddr, sshConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return ssh.NewClient(c, chans, reqs), nil
 }
 
 // 生成Sftp Client
@@ -228,17 +263,19 @@ func (server *Server) stdIO(session *ssh.Session) error {
 
 // 格式化日志文件名
 func (server *Server) formatLogFilename(filename string) string {
-	kvs := map[string]string{
-		"%g":  server.groupName,
-		"%n":  server.Name,
-		"%dt": time.Now().Format("20060102-150405"),
-		"%d":  time.Now().Format("20060102"),
-		"%u":  server.User,
-		"%a":  server.Alias,
+	kvs := []map[string]string{
+		{"%g": server.groupName},
+		{"%n": server.Name},
+		{"%dt": time.Now().Format("20060102150405")},
+		{"%d": time.Now().Format("20060102")},
+		{"%u": server.User},
+		{"%a": server.Alias},
 	}
 
-	for k, v := range kvs {
-		filename = strings.ReplaceAll(filename, k, v)
+	for _, kv := range kvs {
+		for k, v := range kv {
+			filename = strings.ReplaceAll(filename, k, v)
+		}
 	}
 
 	return filename

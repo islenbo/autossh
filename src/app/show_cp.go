@@ -78,7 +78,7 @@ func showCp(configFile string) {
 		if source.server == nil {
 			srcIoClient = new(LocalIOClient)
 		} else {
-			sftpClient, err := cp.target.server.GetSftpClient()
+			sftpClient, err := source.server.GetSftpClient()
 			if err != nil {
 				cp.printFileError(source.path, err)
 				continue

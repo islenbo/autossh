@@ -9,7 +9,7 @@ import (
 func handleAdd(cfg *Config, _ []string) error {
 	groups := make(map[string]*Group)
 	for i := range cfg.Groups {
-		group := &cfg.Groups[i]
+		group := cfg.Groups[i]
 		groups[group.Prefix] = group
 		utils.Info("["+group.Prefix+"]"+group.GroupName, "\t")
 	}
@@ -34,7 +34,7 @@ func handleAdd(cfg *Config, _ []string) error {
 		group.Servers = append(group.Servers, server)
 		server.groupName = group.GroupName
 	} else {
-		cfg.Servers = append(cfg.Servers, server)
+		cfg.Servers = append(cfg.Servers, &server)
 	}
 
 	return cfg.saveConfig(true)
