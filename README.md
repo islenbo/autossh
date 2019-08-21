@@ -1,6 +1,6 @@
 # autossh
 
-一个ssh远程客户端，可一键登录远程服务器，主要用来弥补Mac/Linux Terminal ssh无法保存密码的不足。
+一个SSH远程客户端，可一键登录远程服务器，主要用来弥补Mac/Linux Terminal SSH无法保存密码的不足。
 
 ![演示](https://raw.githubusercontent.com/islenbo/autossh/c9b52688dabbba8ef6403c2f83f8d758ae0e4dfe/doc/images/ezgif-5-42b5117192fc.gif)
 
@@ -26,7 +26,7 @@
 ```yaml
 show_detail: bool <是否显示服务器详情(用户、IP)>
 options:
-  ServerAliveInterval: int <是否定时发送心跳包，与ssh ServerAliveInterval属性用法相同>
+  ServerAliveInterval: int <是否定时发送心跳包，与SSH ServerAliveInterval属性用法相同>
 servers:
   - name: string <显示名称>
     ip: string <服务器IP>
@@ -67,8 +67,8 @@ groups:
 
 ## Q&amp;A
 
-### Q: Downloads中为什么没有Windows的包？
-A: Windows下有很多ssh工具，autossh主要是面向Mac/Linux群体。
+### Q: 为什么没有Windows的包？
+A: Windows下有很多优秀的SSH工具，autossh主要是面向Mac/Linux群体，Windows用户可自行编译。
 
 ### Q: cp 命令出现报错: ssh: subsystem request failed
 A: 修改服务器 /etc/ssh/sshd_config 将 `Subsystem       sftp    /usr/libexec/openssh/sftp-server` 的注释打开，重启 sshd 服务。
