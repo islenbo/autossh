@@ -6,17 +6,16 @@
 
 ## 功能说明
 - 核心代码重构，使用go.mod管理依赖
-- 新增分组折叠功能
-- 新增自动更新检测功能
+- 新增cp文件/文件夹复制功能 `autossh cp source:/file target:/file`
+- 新增自动更新检测功能 `autossh upgrade`
+- 新增快捷登录功能 `autossh [序号/别名]`
+- 新增分组折叠功能，输入组前缀即可展开/折叠
+- 支持SOCKS5代理
 - 新增一键安装脚本
 - 新增会话日志保存功能
 - 删除功能支持ctrl+d退出
 - 优化帮助菜单显示
 - 修复若干Bug
-- 支持SOCKS5代理
-
-## 下载
-[https://github.com/islenbo/autossh/releases](https://github.com/islenbo/autossh/releases)
 
 ## 安装
 - Mac/Linux用户直接下载安装包，运行install脚本即可。
