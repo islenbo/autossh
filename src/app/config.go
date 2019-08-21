@@ -14,8 +14,8 @@ import (
 
 type Config struct {
 	ShowDetail bool                   `json:"show_detail"`
-	Servers    []Server               `json:"servers"`
-	Groups     []Group                `json:"groups"`
+	Servers    []*Server              `json:"servers"`
+	Groups     []*Group               `json:"groups"`
 	Options    map[string]interface{} `json:"options"`
 
 	// 服务器map索引，可通过编号、别名快速定位到某一个服务器
@@ -28,6 +28,21 @@ type Group struct {
 	Prefix    string   `json:"prefix"`
 	Servers   []Server `json:"servers"`
 	Collapse  bool     `json:"collapse"`
+	Proxy     *Proxy   `json:"proxy"`
+}
+
+type ProxyType string
+
+const (
+	ProxyTypeSocks5 ProxyType = "SOCKS5"
+)
+
+type Proxy struct {
+	Type     ProxyType `json:"type"`
+	Server   string    `json:"server"`
+	Port     int       `json:"port"`
+	User     string    `json:"user"`
+	Password string    `json:"password"`
 }
 
 type LogMode string
@@ -60,7 +75,7 @@ type ServerIndex struct {
 func (cfg *Config) createServerIndex() {
 	cfg.serverIndex = make(map[string]ServerIndex)
 	for i := range cfg.Servers {
-		server := &cfg.Servers[i]
+		server := cfg.Servers[i]
 		server.Format()
 		index := strconv.Itoa(i + 1)
 
@@ -81,11 +96,12 @@ func (cfg *Config) createServerIndex() {
 	}
 
 	for i := range cfg.Groups {
-		group := &cfg.Groups[i]
+		group := cfg.Groups[i]
 		for j := range group.Servers {
 			server := &group.Servers[j]
 			server.Format()
 			server.groupName = group.GroupName
+			server.group = group
 			index := group.Prefix + strconv.Itoa(j+1)
 
 			if _, ok := cfg.serverIndex[index]; ok {
@@ -136,7 +152,9 @@ func (cfg *Config) backup() error {
 		return err
 	}
 
-	defer srcFile.Close()
+	defer func() {
+		_ = srcFile.Close()
+	}()
 
 	path, _ := filepath.Abs(filepath.Dir(cfg.file))
 	backupFile := path + "/config-" + time.Now().Format("20060102150405") + ".json"
@@ -144,7 +162,9 @@ func (cfg *Config) backup() error {
 	if err != nil {
 		return err
 	}
-	defer desFile.Close()
+	defer func() {
+		_ = desFile.Close()
+	}()
 
 	_, err = io.Copy(desFile, srcFile)
 	if err != nil {

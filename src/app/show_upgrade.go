@@ -108,7 +108,9 @@ func (Upgrade) unzip(zipFile string, destDir string) (string, error) {
 	if err != nil {
 		return fullpath, err
 	}
-	defer zipReader.Close()
+	defer func() {
+		_ = zipReader.Close()
+	}()
 
 	for _, f := range zipReader.File {
 		fpath := filepath.Join(destDir, f.Name)
@@ -127,13 +129,17 @@ func (Upgrade) unzip(zipFile string, destDir string) (string, error) {
 			if err != nil {
 				return fullpath, err
 			}
-			defer inFile.Close()
+			defer func() {
+				_ = inFile.Close()
+			}()
 
 			outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 			if err != nil {
 				return fullpath, err
 			}
-			defer outFile.Close()
+			defer func() {
+				_ = outFile.Close()
+			}()
 
 			_, err = io.Copy(outFile, inFile)
 			if err != nil {
@@ -168,11 +174,15 @@ func (Upgrade) downloadFile(url string, downloadPath string, fb func(length, dow
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 	if resp.Body == nil {
 		return errors.New("body is null")
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	//下面是 io.copyBuffer() 的简化版本
 	for {
 		//读取bytes
@@ -234,7 +244,9 @@ func (upgrade *Upgrade) loadLatestVersion() {
 		panic(err)
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		panic(err)

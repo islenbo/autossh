@@ -42,7 +42,7 @@ func scanInput(cfg *Config) (loop bool, clear bool, reload bool) {
 				utils.Logger.Error("server connect error ", err)
 				utils.Errorln(err)
 			}
-			return true, true, false
+			return false, true, false
 		}
 	case InputCmdGroupPrefix:
 		{

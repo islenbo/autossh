@@ -6,7 +6,6 @@ import (
 )
 
 func showHelp() {
-	flag.Usage = usage
 	flag.Usage()
 }
 
@@ -17,16 +16,15 @@ Usage:
   autossh [options] [commands]
 
 Options:
-  -c, -config	指定配置文件。
-             	(default: ./config.json)
-  -v, -version	显示版本信息。
-  -h, -help	显示帮助信息。
+  -c, -config string    指定配置文件(default: ./config.json)。
+  -v, -version          显示版本信息。
+  -h, -help             显示帮助信息。
 
 Commands:
-  upgrade       	    	检测升级。
-  cp [-r] source target 	复制传输。
-  ${ServerNum}          	使用编号登录指定服务器。
-  ${ServerAlias}        	使用别名登录指定服务器。
+  cp [-r] source target    复制传输。
+  ${ServerNum}             使用编号登录指定服务器。
+  ${ServerAlias}           使用别名登录指定服务器。
+  upgrade                  检测并更新到最新版本。
 `
 	utils.Logln(str)
 }
