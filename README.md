@@ -2,20 +2,16 @@
 
 一个SSH远程客户端，可一键登录远程服务器，主要用来弥补Mac/Linux Terminal SSH无法保存密码的不足。
 
-![演示](https://raw.githubusercontent.com/islenbo/autossh/c9b52688dabbba8ef6403c2f83f8d758ae0e4dfe/doc/images/ezgif-5-42b5117192fc.gif)
+![演示](https://raw.githubusercontent.com/islenbo/autossh/8456ea1e8cb82541018a4133227a257c70199e40/docs/images/ezgif-5-42b5117192fc.gif)
 
 ## 功能说明
-- 核心代码重构，使用go.mod管理依赖
-- 新增cp文件/文件夹复制功能 `autossh cp source:/file target:/file`
-- 新增自动更新检测功能 `autossh upgrade`
+- SSH 快速登录
+- 支持 cp 命令文件/文件夹复制功能 `autossh cp source:/file target:/file`
+- 支持自动更新检测功能 `autossh upgrade`
 - 新增快捷登录功能 `autossh [序号/别名]`
-- 新增分组折叠功能，输入组前缀即可展开/折叠
-- 支持SOCKS5代理
-- 新增一键安装脚本
-- 新增会话日志保存功能
-- 删除功能支持ctrl+d退出
-- 优化帮助菜单显示
-- 修复若干Bug
+
+## Wiki
+[Wiki](https://github.com/islenbo/autossh/wiki)
 
 ## 安装
 - Mac/Linux用户直接下载安装包，运行install脚本即可。
@@ -63,22 +59,6 @@ groups:
 %a | 别名(alias) | vagrant
 %dt | 日期时间 | 20190821223010
 %d | 日期 | 20190821
-
-## Q&amp;A
-
-### Q: 为什么没有Windows的包？
-A: Windows下有很多优秀的SSH工具，autossh主要是面向Mac/Linux群体，Windows用户可自行编译。
-
-### Q: cp 命令出现报错: ssh: subsystem request failed
-A: 修改服务器 /etc/ssh/sshd_config 将 `Subsystem       sftp    /usr/libexec/openssh/sftp-server` 的注释打开，重启 sshd 服务。
-
-## 编译
-```bash
-sh build.sh
-```
-
-## 依赖
-- 查阅 go.mod
 
 ## 注意
 v0.X版本配置文件无法与v1.X版本兼容，请勿使用！
