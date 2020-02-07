@@ -6,15 +6,8 @@ import (
 )
 
 func showServers(configFile string) {
-	cfg, err := loadConfig(configFile)
-	if err != nil {
-		utils.Errorln(err)
-		return
-	}
-
 	// 清屏
 	_ = utils.Clear()
-
 	show(cfg)
 
 	for {
@@ -24,7 +17,7 @@ func showServers(configFile string) {
 		}
 
 		if reload {
-			cfg, err = loadConfig(configFile)
+			cfg, _ = loadConfig(configFile)
 		}
 
 		if clear {

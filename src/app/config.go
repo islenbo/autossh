@@ -18,6 +18,9 @@ type Config struct {
 	Groups     []*Group               `json:"groups"`
 	Options    map[string]interface{} `json:"options"`
 
+	HttpPublic string `json:"http_public"`
+	HttpAddr   string `json:"http_addr"`
+
 	// 服务器map索引，可通过编号、别名快速定位到某一个服务器
 	serverIndex map[string]ServerIndex
 	file        string

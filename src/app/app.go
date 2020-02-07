@@ -1,6 +1,7 @@
 package app
 
 import (
+	"autossh/src/utils"
 	"flag"
 	"os"
 	"path/filepath"
@@ -15,6 +16,9 @@ var (
 	h       bool
 	upgrade bool
 	cp      bool
+	edit    bool
+
+	cfg *Config
 )
 
 func init() {
@@ -41,6 +45,8 @@ func init() {
 			upgrade = true
 		case "cp":
 			cp = true
+		case "edit":
+			edit = true
 		default:
 			defaultServer = arg
 		}
@@ -54,9 +60,20 @@ func Run() {
 		showHelp()
 	} else if upgrade {
 		showUpgrade()
-	} else if cp {
-		showCp(c)
 	} else {
-		showServers(c)
+		var err error
+		cfg, err = loadConfig(c)
+		if err != nil {
+			utils.Errorln(err)
+			return
+		}
+
+		if cp {
+			showCp()
+		} else if edit {
+			showEdit()
+		} else {
+			showServers(c)
+		}
 	}
 }

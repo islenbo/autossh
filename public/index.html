@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="data:;base64,=">
+    <link href="https://cdn.bootcss.com/element-ui/2.11.1/theme-chalk/index.css" rel="stylesheet">
+</head>
+<body>
+<div id="app">
+
+</div>
+</body>
+<script src="https://cdn.bootcss.com/vue/2.6.10/vue.js"></script>
+<script src="https://cdn.bootcss.com/element-ui/2.11.1/index.js"></script>
+<script src="https://cdn.bootcss.com/axios/0.19.0/axios.min.js"></script>
+<script>
+
+    new Vue({
+        el: '#app',
+        data: function () {
+            return {
+                config: null
+            };
+        },
+        methods: {
+            fetchConfig: function () {
+                return this.$http.get('/config');
+            }
+        },
+        mounted: function () {
+            this.fetchConfig().then(function (data) {
+                console.log(this);
+            });
+        },
+        created: function () {
+            this.$http = new Http(this);
+        }
+    });
+</script>
+</html>

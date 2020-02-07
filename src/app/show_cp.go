@@ -39,14 +39,7 @@ type Cp struct {
 }
 
 // 复制
-func showCp(configFile string) {
-	var err error
-	cfg, err := loadConfig(configFile)
-	if err != nil {
-		utils.Errorln(err)
-		return
-	}
-
+func showCp() {
 	cp := Cp{cfg: cfg}
 	if err := cp.parse(); err != nil {
 		utils.Errorln(err)

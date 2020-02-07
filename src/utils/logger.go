@@ -3,6 +3,7 @@ package utils
 import (
 	"log"
 	"os"
+	"path/filepath"
 )
 
 type logger struct {
@@ -14,7 +15,8 @@ type logger struct {
 var Logger logger
 
 func init() {
-	logFile, _ := ParsePath("./app.log")
+	dir, _ := os.Executable()
+	logFile, _ := ParsePath(filepath.Dir(dir) + "/app.log")
 	Logger = logger{
 		File: logFile,
 	}
