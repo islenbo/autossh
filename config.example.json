@@ -3,6 +3,9 @@
   "options": {
     "ServerAliveInterval": 30
   },
+  "ext_server_configs": [
+    
+  ],
   "servers": [
     {
       "name": "example-password",

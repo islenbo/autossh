@@ -39,8 +39,17 @@ func showServers(configFile string) {
 func show(cfg *Config) {
 	maxlen := separatorLength(*cfg)
 	utils.Infoln(utils.FormatSeparator(" 欢迎使用 Auto SSH ", "=", maxlen))
+
+	indexMaxLen := 0;
 	for i, server := range cfg.Servers {
-		utils.Logln(server.FormatPrint(strconv.Itoa(i+1), cfg.ShowDetail))
+		ilen := len(" [" + strconv.Itoa(i+1) + server.Alias + "]");
+		if ilen > indexMaxLen {
+			indexMaxLen = ilen;
+		}
+	}
+
+	for i, server := range cfg.Servers {
+		utils.Logln(server.FormatPrint(strconv.Itoa(i+1), indexMaxLen, cfg.ShowDetail))
 	}
 
 	for _, group := range cfg.Groups {
@@ -55,14 +64,23 @@ func show(cfg *Config) {
 			collapseNotice = "[" + group.Prefix + " ↑]"
 		}
 
+		utils.Infoln("");
 		utils.Infoln(utils.FormatSeparator(" "+group.GroupName+" "+collapseNotice+" ", "_", maxlen))
 		if !group.Collapse {
+			indexMaxLen := 0;
 			for i, server := range group.Servers {
-				utils.Logln(server.FormatPrint(group.Prefix+strconv.Itoa(i+1), cfg.ShowDetail))
+				ilen := len(" [" + group.Prefix + strconv.Itoa(i+1) + server.Alias + "]");
+				if ilen > indexMaxLen {
+					indexMaxLen = ilen;
+				}
+			}
+			for i, server := range group.Servers {
+				utils.Logln(server.FormatPrint(group.Prefix + strconv.Itoa(i+1), indexMaxLen, cfg.ShowDetail))
 			}
 		}
 	}
 
+	utils.Infoln("");
 	utils.Infoln(utils.FormatSeparator("", "=", maxlen))
 
 	showMenu()

@@ -25,6 +25,24 @@ func loadConfig(configFile string) (cfg *Config, err error) {
 	}
 
 	cfg.file = configFile
+	
+	//加载外部文件
+	for i := range cfg.ExtServerConfigs {
+		b, err = ioutil.ReadFile(cfg.ExtServerConfigs[i])
+		if err != nil {
+			return cfg, errors.New("Can't read ext server config file: " + cfg.ExtServerConfigs[i] + ", err: " + err.Error())
+		}
+		server := new([]Server)
+		err = json.Unmarshal(b, &server)
+		if err != nil {
+			return cfg, errors.New("Can't parse ext server config file: " + cfg.ExtServerConfigs[i] + ", err: " + err.Error())
+		}
+
+		for j := range *server {
+			cfg.Servers = append(cfg.Servers, &((*server)[j]))
+		}
+	}
+
 	cfg.createServerIndex()
 
 	return cfg, nil

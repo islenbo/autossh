@@ -66,16 +66,17 @@ func (server *Server) MergeOptions(options map[string]interface{}, overwrite boo
 }
 
 // 格式化输出，用于打印
-func (server *Server) FormatPrint(flag string, ShowDetail bool) string {
+func (server *Server) FormatPrint(flag string, indexMaxLen int, ShowDetail bool) string {
 	alias := ""
 	if server.Alias != "" {
 		alias = "|" + server.Alias
 	}
-
+	f := "%-" + strconv.Itoa(indexMaxLen) + "s";
+	header := fmt.Sprintf(f, " [" + flag + alias + "]");
 	if ShowDetail {
-		return " [" + flag + alias + "]" + "\t" + server.Name + " [" + server.User + "@" + server.Ip + "]"
+		return header + "\t" + server.Name + " [" + server.User + "@" + server.Ip + "]"
 	} else {
-		return " [" + flag + alias + "]" + "\t" + server.Name
+		return header + "\t" + server.Name
 	}
 }
 

@@ -13,11 +13,11 @@ import (
 )
 
 type Config struct {
-	ShowDetail bool                   `json:"show_detail"`
-	Servers    []*Server              `json:"servers"`
-	Groups     []*Group               `json:"groups"`
-	Options    map[string]interface{} `json:"options"`
-
+	ShowDetail 			bool                   `json:"show_detail"`
+	Servers    			[]*Server              `json:"servers"`
+	Groups     			[]*Group               `json:"groups"`
+	Options    			map[string]interface{} `json:"options"`
+	ExtServerConfigs 	[]string 		  	   `json:"ext_server_configs"` //额外的配置server配置文件
 	// 服务器map索引，可通过编号、别名快速定位到某一个服务器
 	serverIndex map[string]ServerIndex
 	file        string
@@ -135,12 +135,12 @@ func (cfg *Config) saveConfig(backup bool) error {
 		return err
 	}
 
-	if backup {
+	/*if backup {
 		err = cfg.backup()
 		if err != nil {
 			return err
 		}
-	}
+	}*/
 
 	return ioutil.WriteFile(cfg.file, out.Bytes(), os.ModePerm)
 }
