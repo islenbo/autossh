@@ -19,12 +19,12 @@ var operations = make(map[string]Operation)
 func init() {
 	menuMap = [][]Operation{
 		{
-			{Key: "add", Label: "添加", Process: handleAdd},
-			{Key: "edit", Label: "编辑", Process: handleEdit},
-			{Key: "remove", Label: "删除", Process: handleRemove},
+			{Key: "a", Label: "添加", Process: handleAdd},
+			{Key: "e", Label: "编辑", Process: handleEdit},
+			{Key: "d", Label: "删除", Process: handleRemove},
 		},
 		{
-			{Key: "exit", Label: "退出", End: true},
+			{Key: "q", Label: "退出", End: true},
 		},
 	}
 }
