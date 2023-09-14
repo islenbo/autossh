@@ -4,7 +4,7 @@ export GO111MODULE="on"
 go mod tidy
 
 PROJECT="autossh"
-VERSION="v1.1.0"
+VERSION="v1.2.0"
 BUILD=`date +%FT%T%z`
 
 function build() {
@@ -28,6 +28,7 @@ function build() {
 
 # OS X Mac
 build darwin amd64 macOS
+build darwin arm64 macOS
 
 # Linux
 build linux amd64 linux
